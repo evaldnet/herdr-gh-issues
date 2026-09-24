@@ -1,0 +1,41 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "number": 202,
+        "title": "Liste nulstiller filter ved skift af fane",
+        "state": "OPEN",
+        "url": "https://github.com/evaldnet/clients/pull/202",
+        "body": "<!-- marker -->\n> [!NOTE]\n> 🏢 **Reported by:** Eksempel Entreprise\n<!-- /marker -->\n\nFeltet blev gemt uden validering, så to poster kunne ende med samme nøgle. Det gik ubemærket hen indtil listen blev sorteret, hvor den ene post forsvandt bag den anden.\n\nHvad er lavet\n    Nøglen valideres nu før gem, og dubletter afvises med en tydelig besked\n    Sorteringen falder tilbage på oprettelsestidspunktet ved ens nøgler\n    Eksisterende dubletter vises i en liste, så de kan ryddes op manuelt\n    Ingen data slettes automatisk\n\n<!-- sync -->\n🔗 **[View task in the external tracker](https://example.invalid/task/000)**\n<!-- /sync -->",
+        "updatedAt": "2026-09-11T05:57:02Z",
+        "isDraft": false,
+        "reviewDecision": "CHANGES_REQUESTED",
+        "additions": 251,
+        "deletions": 0,
+        "changedFiles": 1,
+        "author": {
+          "login": "teammate-1"
+        },
+        "headRefName": "bugfix/example-customer/cleanup-ghost-clone-registrations",
+        "baseRefName": "master",
+        "assignees": {
+          "nodes": [
+            {
+              "login": "lars"
+            }
+          ]
+        },
+        "comments": {
+          "totalCount": 0
+        },
+        "labels": {
+          "nodes": [
+            {
+              "name": "bugfix"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

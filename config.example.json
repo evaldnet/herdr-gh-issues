@@ -1,0 +1,77 @@
+{
+  "org": "your-org",
+  "space_cwd": "~/Projects",
+  "scope": "assigned",
+  "limit": 100,
+  "agent_kind": "claude",
+  "body_limit": 6000,
+  "refresh_seconds": 120,
+  "split_direction": "right",
+  "status_field": "Status",
+  "priority_field": "Priority",
+  "meta_ttl_seconds": 180,
+  "issue_type_emoji": false,
+  "watch_seconds": 120,
+  "notify_status_change": true,
+  "repo_paths": {},
+  "views": [
+    {
+      "id": "assigned",
+      "label": "issues assigned to me",
+      "kind": "issues",
+      "query": "is:issue is:open assignee:@me",
+      "column": "Status",
+      "order": [
+        "Test rejected",
+        "In Development",
+        "Not Started"
+      ],
+      "exclude": {
+        "Status": [
+          "Approved",
+          "Deployed"
+        ]
+      },
+      "date_field": "Due date",
+      "command": "/github-issue",
+      "exclude_labels": []
+    },
+    {
+      "id": "totest",
+      "label": "ready for test, not mine",
+      "kind": "issues",
+      "query": "is:issue is:open -assignee:@me field.Status:\"Ready for test\"",
+      "column": "assignees",
+      "sort_by": "Deployment date",
+      "group_by": "Deployment date",
+      "group_labels": [
+        "Deployment date set",
+        "No deployment date"
+      ],
+      "date_field": "Deployment date",
+      "command": "/github-issue"
+    },
+    {
+      "id": "review",
+      "label": "PRs awaiting my review",
+      "kind": "prs",
+      "flags": [
+        "--review-requested=@me"
+      ],
+      "column": "author",
+      "command": "/github-review"
+    },
+    {
+      "id": "ready",
+      "label": "my PRs ready for review",
+      "kind": "prs",
+      "flags": [
+        "--author=@me",
+        "--draft=false",
+        "--review=none"
+      ],
+      "column": "review",
+      "command": "/github-issue"
+    }
+  ]
+}

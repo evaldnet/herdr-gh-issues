@@ -1,0 +1,14 @@
+{
+  "data": {
+    "p0": {
+      "pullRequest": {
+        "reviewDecision": "REVIEW_REQUIRED"
+      }
+    },
+    "p1": {
+      "pullRequest": {
+        "reviewDecision": "CHANGES_REQUESTED"
+      }
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "id": "cli:agent:list",
+  "result": {
+    "type": "agent_list",
+    "agents": [
+      {
+        "agent": "claude",
+        "agent_status": "idle",
+        "cwd": "/home/tester/Projects/evaldnet",
+        "focused": false,
+        "name": "gh-platform-134",
+        "pane_id": "wT1:p1",
+        "tab_id": "wT1:t1",
+        "terminal_title": "✳ agent",
+        "tokens": {
+          "limit": "5h 88%",
+          "provider": "claude",
+          "title": "Liste nulstiller filter ved skift af fane"
+        },
+        "workspace_id": "wT1"
+      },
+      {
+        "agent": "claude",
+        "agent_status": "working",
+        "cwd": "/home/tester/Projects/evaldnet",
+        "focused": false,
+        "name": "pr-clients-202",
+        "pane_id": "wT2:p1",
+        "tab_id": "wT2:t1",
+        "terminal_title": "◑ agent",
+        "tokens": {
+          "limit": "5h 88%",
+          "provider": "claude"
+        },
+        "workspace_id": "wT2"
+      },
+      {
+        "agent": "claude",
+        "agent_status": "idle",
+        "cwd": "/home/tester",
+        "focused": true,
+        "pane_id": "wT3:p1",
+        "tab_id": "wT3:t1",
+        "terminal_title": "✳ agent",
+        "tokens": {
+          "limit": "5h 88%",
+          "provider": "claude",
+          "title": "Dublet oprettes ved hurtigt dobbeltklik"
+        },
+        "workspace_id": "wT3"
+      }
+    ]
+  }
+}

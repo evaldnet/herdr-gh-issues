@@ -1,0 +1,82 @@
+{
+  "data": {
+    "repository": {
+      "issue": {
+        "number": 134,
+        "title": "Liste nulstiller filter ved skift af fane",
+        "state": "OPEN",
+        "url": "https://github.com/evaldnet/platform/issues/134",
+        "body": "<!-- marker -->\n> [!NOTE]\n> 🏢 **Reported by:** Eksempel Entreprise\n<!-- /marker -->\n\nFeltet blev gemt uden validering, så to poster kunne ende med samme nøgle. Det gik ubemærket hen indtil listen blev sorteret, hvor den ene post forsvandt bag den anden.\n\nHvad er lavet\n    Nøglen valideres nu før gem, og dubletter afvises med en tydelig besked\n    Sorteringen falder tilbage på oprettelsestidspunktet ved ens nøgler\n    Eksisterende dubletter vises i en liste, så de kan ryddes op manuelt\n    Ingen data slettes automatisk\n\n<!-- sync -->\n🔗 **[View task in the external tracker](https://example.invalid/task/000)**\n<!-- /sync -->",
+        "updatedAt": "2026-09-11T12:15:07Z",
+        "author": {
+          "login": "issue-sync-bot"
+        },
+        "assignees": {
+          "nodes": [
+            {
+              "login": "lars"
+            }
+          ]
+        },
+        "milestone": null,
+        "comments": {
+          "totalCount": 0
+        },
+        "labels": {
+          "nodes": [
+            {
+              "name": "module:kunde"
+            }
+          ]
+        },
+        "issueType": {
+          "name": "🕷️ Bugfix"
+        },
+        "closedByPullRequestsReferences": {
+          "nodes": [
+            {
+              "number": 202,
+              "url": "https://github.com/evaldnet/clients/pull/202",
+              "state": "OPEN",
+              "isDraft": false,
+              "reviewDecision": "CHANGES_REQUESTED",
+              "repository": {
+                "nameWithOwner": "evaldnet/clients"
+              }
+            }
+          ]
+        },
+        "issueFieldValues": {
+          "nodes": [
+            {
+              "value": "First",
+              "field": {
+                "name": "Priority"
+              }
+            },
+            {
+              "value": "Support",
+              "field": {
+                "name": "Task Type"
+              }
+            },
+            {
+              "value": "Medium - 1 reviewer",
+              "field": {
+                "name": "Complexity"
+              }
+            },
+            {},
+            {
+              "value": "In Development",
+              "field": {
+                "name": "Status"
+              }
+            },
+            {}
+          ]
+        }
+      }
+    }
+  }
+}

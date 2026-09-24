@@ -1,0 +1,617 @@
+{
+  "data": {
+    "search": {
+      "issueCount": 14,
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      },
+      "nodes": [
+        {
+          "number": 117,
+          "title": "Liste nulstiller filter ved skift af fane",
+          "url": "https://github.com/evaldnet/platform/issues/117",
+          "state": "OPEN",
+          "updatedAt": "2026-09-11T10:07:51Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "On Hold"
+              }
+            ]
+          },
+          "issueType": {
+            "name": "🚀 Feature"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "Support",
+                "field": {
+                  "name": "Task Type"
+                }
+              },
+              {},
+              {
+                "value": "Ready for test",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 112,
+          "title": "Dublet oprettes ved hurtigt dobbeltklik",
+          "url": "https://github.com/evaldnet/platform/issues/112",
+          "state": "OPEN",
+          "updatedAt": "2026-09-08T07:03:24Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": []
+          },
+          "issueType": {
+            "name": "👨‍💻 Refactoring"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {},
+              {
+                "value": "Not Started",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 111,
+          "title": "Rapport viser forkert total i sidefod",
+          "url": "https://github.com/evaldnet/platform/issues/111",
+          "state": "OPEN",
+          "updatedAt": "2026-09-14T07:27:21Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": []
+          },
+          "issueType": {
+            "name": "👨‍💻 Refactoring"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {},
+              {
+                "value": "Approved",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 110,
+          "title": "Import afviser filer med BOM",
+          "url": "https://github.com/evaldnet/platform/issues/110",
+          "state": "OPEN",
+          "updatedAt": "2026-09-08T07:03:01Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "On Hold"
+              },
+              {
+                "name": "På hold af DEV"
+              }
+            ]
+          },
+          "issueType": {
+            "name": "🕷️ Bugfix"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {},
+              {
+                "value": "In Development",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 109,
+          "title": "Liste nulstiller filter ved skift af fane",
+          "url": "https://github.com/evaldnet/platform/issues/109",
+          "state": "OPEN",
+          "updatedAt": "2026-09-08T07:02:53Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "On Hold"
+              }
+            ]
+          },
+          "issueType": {
+            "name": "👨‍💻 Refactoring"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {},
+              {
+                "value": "In Development",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 108,
+          "title": "Søgning skelner mellem store og små bogstaver",
+          "url": "https://github.com/evaldnet/platform/issues/108",
+          "state": "OPEN",
+          "updatedAt": "2026-09-08T07:02:39Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "module:integration"
+              }
+            ]
+          },
+          "issueType": {
+            "name": "🕷️ Bugfix"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {},
+              {
+                "value": "In Development",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 105,
+          "title": "Tidszone skifter ved eksport til CSV",
+          "url": "https://github.com/evaldnet/platform/issues/105",
+          "state": "OPEN",
+          "updatedAt": "2026-09-08T05:51:27Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "module:integration"
+              }
+            ]
+          },
+          "issueType": {
+            "name": "🕷️ Bugfix"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {},
+              {
+                "value": "Ready for test",
+                "field": {
+                  "name": "Status"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 4118,
+          "title": "Knap forbliver aktiv efter fejlbesked",
+          "url": "https://github.com/evaldnet/platform/issues/4118",
+          "state": "OPEN",
+          "updatedAt": "2026-09-08T09:25:33Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "module:timegodkendelse"
+              }
+            ]
+          },
+          "issueType": null,
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "Project",
+                "field": {
+                  "name": "Task Type"
+                }
+              },
+              {
+                "value": "Low - 1 reviewer",
+                "field": {
+                  "name": "Complexity"
+                }
+              },
+              {},
+              {
+                "value": "Ready for test",
+                "field": {
+                  "name": "Status"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 103,
+          "title": "Import afviser filer med BOM",
+          "url": "https://github.com/evaldnet/platform/issues/103",
+          "state": "OPEN",
+          "updatedAt": "2026-09-07T08:30:31Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "module:diater"
+              }
+            ]
+          },
+          "issueType": null,
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "First",
+                "field": {
+                  "name": "Priority"
+                }
+              },
+              {
+                "value": "Support",
+                "field": {
+                  "name": "Task Type"
+                }
+              },
+              {
+                "value": "Low - 1 reviewer",
+                "field": {
+                  "name": "Complexity"
+                }
+              },
+              {},
+              {
+                "value": "Approved",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 4040,
+          "title": "Liste nulstiller filter ved skift af fane",
+          "url": "https://github.com/evaldnet/platform/issues/4040",
+          "state": "OPEN",
+          "updatedAt": "2026-09-01T09:42:04Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": []
+          },
+          "issueType": null,
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "First",
+                "field": {
+                  "name": "Priority"
+                }
+              },
+              {
+                "value": "Support",
+                "field": {
+                  "name": "Task Type"
+                }
+              },
+              {
+                "value": "Low - 1 reviewer",
+                "field": {
+                  "name": "Complexity"
+                }
+              },
+              {},
+              {
+                "value": "Approved",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 4025,
+          "title": "Sortering springer tomme felter over",
+          "url": "https://github.com/evaldnet/platform/issues/4025",
+          "state": "OPEN",
+          "updatedAt": "2026-09-09T06:44:17Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": []
+          },
+          "issueType": null,
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "First",
+                "field": {
+                  "name": "Priority"
+                }
+              },
+              {
+                "value": "Project",
+                "field": {
+                  "name": "Task Type"
+                }
+              },
+              {
+                "value": "2026-07-14",
+                "field": {
+                  "name": "Due date"
+                }
+              },
+              {},
+              {
+                "value": "Test rejected",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 3961,
+          "title": "Vedhæftning mangler efter gemt kladde",
+          "url": "https://github.com/evaldnet/platform/issues/3961",
+          "state": "OPEN",
+          "updatedAt": "2026-09-14T07:08:00Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": [
+              {
+                "name": "module:medarbejdere"
+              }
+            ]
+          },
+          "issueType": {
+            "name": "🚀 Feature"
+          },
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "First",
+                "field": {
+                  "name": "Priority"
+                }
+              },
+              {
+                "value": "Project",
+                "field": {
+                  "name": "Task Type"
+                }
+              },
+              {
+                "value": "High - 2 reviewers",
+                "field": {
+                  "name": "Complexity"
+                }
+              },
+              {},
+              {
+                "value": "Deployed",
+                "field": {
+                  "name": "Status"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "number": 3931,
+          "title": "Søgning skelner mellem store og små bogstaver",
+          "url": "https://github.com/evaldnet/platform/issues/3931",
+          "state": "OPEN",
+          "updatedAt": "2026-09-01T09:48:52Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": []
+          },
+          "issueType": null,
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "Deployed",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        },
+        {
+          "number": 142,
+          "title": "Notifikation sendes to gange",
+          "url": "https://github.com/evaldnet/platform/issues/142",
+          "state": "OPEN",
+          "updatedAt": "2026-08-31T07:34:37Z",
+          "repository": {
+            "nameWithOwner": "evaldnet/platform"
+          },
+          "assignees": {
+            "nodes": [
+              {
+                "login": "lars"
+              }
+            ]
+          },
+          "labels": {
+            "nodes": []
+          },
+          "issueType": null,
+          "issueFieldValues": {
+            "nodes": [
+              {
+                "value": "Project",
+                "field": {
+                  "name": "Task Type"
+                }
+              },
+              {
+                "value": "Validation",
+                "field": {
+                  "name": "Status"
+                }
+              },
+              {}
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

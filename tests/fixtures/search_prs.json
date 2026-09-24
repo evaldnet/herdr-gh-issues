@@ -1,0 +1,151 @@
+[
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg5OTAxNTcx",
+      "is_bot": false,
+      "login": "lars",
+      "type": "User",
+      "url": "https://github.com/lars"
+    },
+    "isDraft": false,
+    "labels": [
+      {
+        "color": "ededed",
+        "description": "",
+        "id": "LA_kwDOCgBFY88AAAAB8bPkwg",
+        "name": "feature"
+      }
+    ],
+    "number": 302,
+    "repository": {
+      "name": "mobile",
+      "nameWithOwner": "evaldnet/mobile"
+    },
+    "title": "Liste nulstiller filter ved skift af fane",
+    "updatedAt": "2026-09-13T18:34:47Z",
+    "url": "https://github.com/evaldnet/mobile/pull/302"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg5OTAxNTcx",
+      "is_bot": false,
+      "login": "lars",
+      "type": "User",
+      "url": "https://github.com/lars"
+    },
+    "isDraft": false,
+    "labels": [
+      {
+        "color": "D93F0B",
+        "description": "Something isn't working",
+        "id": "LA_kwDOEk2GOs8AAAAB8a0xKw",
+        "name": "bugfix"
+      }
+    ],
+    "number": 113,
+    "repository": {
+      "name": "platform",
+      "nameWithOwner": "evaldnet/platform"
+    },
+    "title": "Dublet oprettes ved hurtigt dobbeltklik",
+    "updatedAt": "2026-09-13T17:57:42Z",
+    "url": "https://github.com/evaldnet/platform/pull/113"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg5OTAxNTcx",
+      "is_bot": false,
+      "login": "lars",
+      "type": "User",
+      "url": "https://github.com/lars"
+    },
+    "isDraft": false,
+    "labels": [],
+    "number": 116,
+    "repository": {
+      "name": "platform",
+      "nameWithOwner": "evaldnet/platform"
+    },
+    "title": "Rapport viser forkert total i sidefod",
+    "updatedAt": "2026-09-11T12:10:03Z",
+    "url": "https://github.com/evaldnet/platform/pull/116"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg5OTAxNTcx",
+      "is_bot": false,
+      "login": "lars",
+      "type": "User",
+      "url": "https://github.com/lars"
+    },
+    "isDraft": false,
+    "labels": [
+      {
+        "color": "D93F0B",
+        "description": "Something isn't working",
+        "id": "LA_kwDOEk2GOs8AAAAB8a0xKw",
+        "name": "bugfix"
+      }
+    ],
+    "number": 150,
+    "repository": {
+      "name": "platform",
+      "nameWithOwner": "evaldnet/platform"
+    },
+    "title": "Import afviser filer med BOM",
+    "updatedAt": "2026-09-11T08:41:44Z",
+    "url": "https://github.com/evaldnet/platform/pull/150"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg5OTAxNTcx",
+      "is_bot": false,
+      "login": "lars",
+      "type": "User",
+      "url": "https://github.com/lars"
+    },
+    "isDraft": false,
+    "labels": [
+      {
+        "color": "0FB14A",
+        "description": "",
+        "id": "LA_kwDOEk2GOs8AAAAB8bBAlA",
+        "name": "feature"
+      }
+    ],
+    "number": 115,
+    "repository": {
+      "name": "platform",
+      "nameWithOwner": "evaldnet/platform"
+    },
+    "title": "Søgning skelner mellem store og små bogstaver",
+    "updatedAt": "2026-09-09T06:40:51Z",
+    "url": "https://github.com/evaldnet/platform/pull/115"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg5OTAxNTcx",
+      "is_bot": false,
+      "login": "lars",
+      "type": "User",
+      "url": "https://github.com/lars"
+    },
+    "isDraft": false,
+    "labels": [
+      {
+        "color": "D93F0B",
+        "description": "Something isn't working",
+        "id": "LA_kwDOEk2GOs8AAAAB8a0xKw",
+        "name": "bugfix"
+      }
+    ],
+    "number": 4143,
+    "repository": {
+      "name": "platform",
+      "nameWithOwner": "evaldnet/platform"
+    },
+    "title": "Tidszone skifter ved eksport til CSV",
+    "updatedAt": "2026-09-08T04:41:44Z",
+    "url": "https://github.com/evaldnet/platform/pull/4143"
+  }
+]

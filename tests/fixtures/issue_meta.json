@@ -1,0 +1,51 @@
+{
+  "data": {
+    "repository": {
+      "issue": {
+        "number": 134,
+        "title": "Liste nulstiller filter ved skift af fane",
+        "state": "OPEN",
+        "labels": {
+          "nodes": [
+            {
+              "name": "module:kunde"
+            }
+          ]
+        },
+        "issueType": {
+          "name": "🕷️ Bugfix"
+        },
+        "issueFieldValues": {
+          "nodes": [
+            {
+              "value": "First",
+              "field": {
+                "name": "Priority"
+              }
+            },
+            {
+              "value": "Support",
+              "field": {
+                "name": "Task Type"
+              }
+            },
+            {
+              "value": "Medium - 1 reviewer",
+              "field": {
+                "name": "Complexity"
+              }
+            },
+            {},
+            {
+              "value": "In Development",
+              "field": {
+                "name": "Status"
+              }
+            },
+            {}
+          ]
+        }
+      }
+    }
+  }
+}

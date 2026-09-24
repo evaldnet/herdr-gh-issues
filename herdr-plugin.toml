@@ -1,0 +1,66 @@
+id = "evaldnet.gh-issues"
+name = "GitHub Issues"
+version = "1.3.0"
+description = "List the GitHub issues assigned to you across the org. Enter opens a new Herdr space with Claude already briefed on the issue."
+min_herdr_version = "0.8.0"
+platforms = ["macos", "linux"]
+
+# No [[build]] section on purpose: stdlib Python only, nothing to compile,
+# nothing to bit-rot except three documented herdr CLI calls.
+
+[[panes]]
+id = "issues"
+title = "GitHub Issues"
+description = "Your assigned issues. Enter briefs Claude in a new space."
+placement = "popup"
+width = "85%"
+height = "80%"
+command = ["sh", "-c", "exec python3 \"$HERDR_PLUGIN_ROOT/bin/panel.py\""]
+
+[[actions]]
+id = "open"
+title = "GitHub Issues: open panel"
+description = "Open the assigned-issues panel."
+contexts = ["workspace", "tab", "pane"]
+command = ["sh", "scripts/open.sh"]
+
+# Sidebar task info for a space opened from an issue. Both events carry
+# HERDR_PANE_ID, and the hook is TTL-cached, so a focus storm costs file reads
+# rather than GitHub calls.
+[[events]]
+on = "pane.focused"
+command = ["python3", "bin/issue_meta.py"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["python3", "bin/issue_meta.py"]
+
+# Pane tokens are not restored after a server restart, so re-seed every agent
+# pane instead of waiting for each to be focused once. It also spawns the
+# detached --watch loop: Herdr has no timer event, and startup hooks must exit.
+[[startup]]
+command = ["python3", "bin/issue_meta.py", "--all"]
+
+[[actions]]
+id = "refresh-meta"
+title = "GitHub Issues: refresh sidebar task info"
+description = "Re-read every issue space and rewrite its sidebar tokens."
+contexts = ["workspace", "tab", "pane"]
+command = ["python3", "bin/issue_meta.py", "--all"]
+
+# Detail pane for the task the current space was opened from. Same shape as the
+# Agent Usage pane: a right split that stays up and refreshes itself. Scoped to
+# its own workspace -- a pane lives in one space, so it needs no follow logic.
+[[panes]]
+id = "task"
+title = "Task"
+description = "The issue this space was created from: board fields, linked PRs, body."
+placement = "split"
+command = ["python3", "bin/task_pane.py"]
+
+[[actions]]
+id = "open-task"
+title = "GitHub Issues: open task detail pane"
+description = "Show this space's issue in a split pane, or focus it if already open."
+contexts = ["workspace", "tab", "pane"]
+command = ["sh", "scripts/open-task.sh"]
