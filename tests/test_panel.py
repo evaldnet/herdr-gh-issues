@@ -371,6 +371,77 @@ class PanelCase(unittest.TestCase):
         joined = "\n".join(rows)
         self.assertNotIn("Traceback", joined)
 
+    # ------------------------------------------------------------ footer mouse
+    def test_footer_spans_map_columns_to_keys(self):
+        items = self.m.footer_items(show_cell=True, label_steps_n=2)
+        foot = self.m.FOOT_SEP.join(label for label, _ in items)
+        spans = self.m.footer_spans(items, 200)
+        for label, key in items:
+            x = foot.index(label)
+            self.assertEqual(self.m.footer_key(spans, x), key, label)
+            self.assertEqual(self.m.footer_key(spans, x + len(label) - 1), key, label)
+        # The separator between two items belongs to neither.
+        self.assertIsNone(self.m.footer_key(spans, len(items[0][0]) + 1))
+        self.assertIsNone(self.m.footer_key(spans, len(foot) + 5))
+
+    def test_footer_item_clipped_off_the_edge_is_not_clickable(self):
+        """A click must never fire something the footer does not show."""
+        items = [("enter claude", "\n"), ("v view", "v"), ("q quit", "q")]
+        spans = self.m.footer_spans(items, 15)  # "q quit" starts past column 15
+        self.assertEqual([key for _, _, key in spans], ["\n"])
+        spans = self.m.footer_spans(items, 17)  # "v view" only half drawn
+        self.assertEqual(spans[-1], (15, 17, "v"))
+
+    @staticmethod
+    def x10_click(col, row):
+        """Press + release as X10 mouse reports (mode 1000, what ncurses asks
+        for under xterm-256color), 0-based col/row."""
+        def report(button):
+            return b"\x1b[M" + bytes([32 + button, 33 + col, 33 + row])
+        return report(0) + report(3)
+
+    def test_screen_click_on_footer_item_acts_like_its_key(self):
+        rows = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            self.env, cols=100, rows=24, seconds=8.0)
+        col = rows[-1].index("v view")
+        clicked = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            self.env, cols=100, rows=24, seconds=8.0,
+            keys=self.x10_click(col, 23) + b"q")
+        second = self.cfg["views"][1]["label"]
+        self.assertNotIn(second, rows[0])
+        self.assertIn(second, clicked[0], "the click should cycle the view")
+        self.assertNotIn("Traceback", "\n".join(clicked))
+
+    def test_screen_mouse_false_leaves_clicks_alone(self):
+        """The opt-out must really release the mouse. It is also the control for
+        the click test above: same report, and nothing may happen."""
+        tmp = tempfile.mkdtemp(prefix="ghi-panel-nomouse-")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        env = harness.fake_env(tmp)
+        harness.write_config(env, dict(harness.plugin_config(), mouse=False))
+        rows = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            env, cols=100, rows=24, seconds=8.0)
+        col = rows[-1].index("v view")
+        clicked = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            env, cols=100, rows=24, seconds=8.0,
+            keys=self.x10_click(col, 23) + b"q")
+        self.assertIn(self.cfg["views"][0]["label"], clicked[0])
+        self.assertNotIn("Traceback", "\n".join(clicked))
+
+    def test_screen_click_off_the_footer_does_nothing(self):
+        rows = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            self.env, cols=100, rows=24, seconds=8.0,
+            keys=self.x10_click(5, 10) + self.x10_click(99, 23) + b"q")
+        first = self.cfg["views"][0]["label"]
+        self.assertIn(first, rows[0])
+        self.assertIn("q quit", rows[-1])
+        self.assertNotIn("Traceback", "\n".join(rows))
+
     def test_screen_survives_a_gh_outage(self):
         env = dict(self.env, GH_STUB_FAIL="1")
         rows = harness.screen(

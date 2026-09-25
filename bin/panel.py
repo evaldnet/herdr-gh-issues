@@ -72,6 +72,9 @@ DEFAULTS = {
          "flags": ["--author=@me", "--draft=false", "--review=none"],
          "column": "none"},
     ],
+    # Clickable footer. Mouse reporting takes the drag away from the terminal,
+    # so plain drag-to-select stops working in the popup; false gives it back.
+    "mouse": True,
 }
 
 # type: ISSUE_ADVANCED, not ISSUE. Only the advanced endpoint honours `field.`
@@ -545,7 +548,7 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
     if height < 4 or width < 30:
         stdscr.addnstr(0, 0, "window too small", width - 1)
         stdscr.refresh()
-        return
+        return []
 
     header = " GitHub · %s · %s" % (cfg.get("org", "?"), view.get("label", view.get("id", "")))
     if cell_filter:
@@ -609,25 +612,60 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
         if chosen:
             stdscr.attroff(curses.A_REVERSE)
 
+    spans = []
     if filtering:
         foot = "/%s" % needle
     elif status:
         foot = status
     else:
-        keys = ["enter claude", "v view"]
-        if show_cell:
-            keys.append("s column")
-        if label_steps_n > 1:
-            keys.append("l label")
-        keys += ["/ filter", "r refresh"]
-        if not show_cell:
-            keys.append("o browser")
-        keys.append("q quit")
-        foot = " · ".join(keys)
+        items = footer_items(show_cell, label_steps_n)
+        foot = FOOT_SEP.join(label for label, _ in items)
+        spans = footer_spans(items, width - 1)
     stdscr.attron(curses.color_pair(2))
     stdscr.addnstr(height - 1, 0, clip(foot, width - 1).ljust(width - 1), width - 1)
     stdscr.attroff(curses.color_pair(2))
     stdscr.refresh()
+    return spans
+
+
+FOOT_SEP = " · "
+
+
+def footer_items(show_cell, label_steps_n):
+    """The footer menu as (label, key) pairs; key is what a click on it sends."""
+    items = [("enter claude", "\n"), ("v view", "v")]
+    if show_cell:
+        items.append(("s column", "s"))
+    if label_steps_n > 1:
+        items.append(("l label", "l"))
+    items += [("/ filter", "/"), ("r refresh", "r")]
+    if not show_cell:
+        items.append(("o browser", "o"))
+    items.append(("q quit", "q"))
+    return items
+
+
+def footer_spans(items, limit):
+    """Column range of each footer item, as [(start, end, key)].
+
+    Items clipped off the right edge are dropped: a click there must not fire
+    something the user cannot see. One that is only partly visible still
+    counts -- its key letter is always the first thing drawn.
+    """
+    spans, x = [], 0
+    for label, key in items:
+        if x >= limit:
+            break
+        spans.append((x, min(x + len(label), limit), key))
+        x += len(label) + len(FOOT_SEP)
+    return spans
+
+
+def footer_key(spans, x):
+    for start, end, key in spans:
+        if start <= x < end:
+            return key
+    return None
 
 
 def load_view(cfg, view, state):
@@ -773,6 +811,11 @@ def run(stdscr):
         pass
 
     cfg = load_config()
+    if cfg.get("mouse", True):
+        # Herdr delivers a click as separate press and release reports, so
+        # act on the release; CLICKED covers terminals that send it whole.
+        curses.mousemask(curses.BUTTON1_RELEASED | curses.BUTTON1_CLICKED)
+        curses.mouseinterval(0)
     state = {}
     cache = {}
     vi = 0
@@ -829,8 +872,9 @@ def run(stdscr):
 
         if not all_rows and not status:
             status = "nothing in “%s” right now" % view.get("label", "this view")
-        draw(stdscr, display, sel, top, needle, filtering, status, cfg, view,
-             cell_filter, options, len(rows), label_filter, len(lsteps))
+        spans = draw(stdscr, display, sel, top, needle, filtering, status, cfg,
+                     view, cell_filter, options, len(rows), label_filter,
+                     len(lsteps))
 
         try:
             ch = stdscr.get_wch()
@@ -838,6 +882,20 @@ def run(stdscr):
             continue
         except KeyboardInterrupt:
             return None
+
+        if ch == curses.KEY_MOUSE:
+            # A footer click stands in for its key; anything else is ignored
+            # without clearing the status line. `spans` is empty while the
+            # footer shows a status or the filter prompt.
+            try:
+                _, mx, my, _, bstate = curses.getmouse()
+            except curses.error:
+                continue
+            clicked = bstate & (curses.BUTTON1_RELEASED | curses.BUTTON1_CLICKED)
+            key = footer_key(spans, mx) if clicked and my == height - 1 else None
+            if key is None:
+                continue
+            ch = key
 
         if filtering:
             if ch in ("\n", "\r", curses.KEY_ENTER):

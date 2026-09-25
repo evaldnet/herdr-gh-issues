@@ -90,6 +90,13 @@ Or the command palette → "GitHub Issues: open panel" / "open task detail pane"
 | `o` | open the issue in a browser |
 | `q` | quit |
 
+The footer is clickable too: a click on an item does what its key does. It
+needs mouse reporting, which takes plain drag-to-select away from the popup;
+set `mouse` to `false` to get selection back. The task pane stays
+keyboard-only for now: Herdr 0.9.1 hands tab-bar clicks to a focused pane
+that asked for the mouse ([herdr#4382](https://github.com/herdrdev/herdr/issues/4382)),
+which a docked pane would trip over and a modal popup does not.
+
 ## What Enter sends
 
 Enter hands the row to a project skill rather than a prose brief. Each view has a
@@ -366,7 +373,7 @@ Both false alarms cost real time before the harness was trustworthy. `ECH`,
 |-------|-------------------|
 | `test_static` | syntax, 3.9 compatibility, manifest shape, **event names against the known set** (Herdr only warns on a typo), that every referenced file exists, and that every config key the code reads appears in both `config.example.json` and this README |
 | `test_issue_meta` | resolving a pane to an issue by record and by name fallback, token values and their 80-character limit, `closed` outranking the board column, field-name folding, cache TTL, and that a plain space has *our* tokens cleared and nobody else's |
-| `test_panel` | one GraphQL request for N PRs, review-decision mapping, board grouping and option order, excluded values leaving no empty section, and that a `gh` outage draws an error rather than an empty list |
+| `test_panel` | one GraphQL request for N PRs, review-decision mapping, board grouping and option order, excluded values leaving no empty section, footer clicks landing on the key under the pointer (a real SGR mouse report through the pty), and that a `gh` outage draws an error rather than an empty list |
 | `test_task_pane` | header identity, every field rendered, linked PRs with review state, body layout (lists hang, paragraphs stay flush, sync markers dropped), no line exceeding the pane width, and the three screens: issue, PR, and plain space |
 | `test_live` | `herdr plugin link` reporting no warnings, and registered entrypoints matching the manifest. Skipped unless `GHI_LIVE=1` |
 
@@ -593,6 +600,7 @@ close here lands on a task there over there, so the panel has no write path at a
 | `issue_type_emoji` | `false` | keep GitHub's emoji in `$issue_type` |
 | `watch_seconds` | `120` | background re-fetch of every issue space; `0` turns the watcher off |
 | `notify_status_change` | `true` | Herdr notification when a fetch sees a task's status move |
+| `mouse` | `true` | clickable footer in the popup; `false` restores drag-to-select |
 
 `repo_paths` is empty by default, which is right for the common case: the
 directory under `space_cwd` is the repo's short name. Add an entry only when a
