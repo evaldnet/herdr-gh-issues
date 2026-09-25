@@ -1,6 +1,6 @@
 id = "evaldnet.gh-issues"
 name = "GitHub Issues"
-version = "1.3.0"
+version = "1.4.0"
 description = "List the GitHub issues assigned to you across the org. Enter opens a new Herdr space with Claude already briefed on the issue."
 min_herdr_version = "0.8.0"
 platforms = ["macos", "linux"]
