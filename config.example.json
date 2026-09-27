@@ -22,6 +22,7 @@
       "kind": "issues",
       "query": "is:issue is:open assignee:@me",
       "column": "Status",
+      "row_field": "Priority",
       "order": [
         "Test rejected",
         "In Development",

@@ -60,6 +60,7 @@ DEFAULTS = {
     # `gh search`. `query` is a GitHub search string (org: is added).
     # column: an org Issue Field name | "author" | "issuetype" | "none".
     # exclude_labels: labels whose rows never appear in the view at all.
+    # row_field: issue field shown inline instead of the grouping column.
     "views": [
         {"id": "assigned", "label": "issues assigned to me", "kind": "issues",
          "query": "is:issue is:open assignee:@me", "column": "Status"},
@@ -411,9 +412,9 @@ def matches(row, needle, cell_filter, label_filter=""):
         return False
     if not needle:
         return True
-    hay = "%s#%d %s %s %s" % (
+    hay = "%s#%d %s %s %s %s" % (
         row["short"], row["number"], row["title"],
-        " ".join(row["labels"]), row.get("cell", ""),
+        " ".join(row["labels"]), row.get("cell", ""), row.get("inline", ""),
     )
     return needle.lower() in hay.lower()
 
@@ -566,6 +567,9 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
     rows_only = [d[1] for d in display if d[0] == "row"]
     cell_w = cell_width(rows_only, options, column)
     show_cell = cell_w > 0
+    # A row_field view already names the column in its section headers, so the
+    # inline slot carries the other field instead of repeating the header.
+    inline_w = max([r.get("inline_w", 0) for r in rows_only] + [0])
     # Fixed-width whether or not a given row has a decision, so titles line up.
     show_review = any(r.get("review_glyph") for r in rows_only)
     grouped = any(d[0] == "head" for d in display)
@@ -595,8 +599,12 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
         chosen = ordinal == sel
         if chosen:
             stdscr.attron(curses.A_REVERSE)
-        cell = row.get("cell") or OFF_BOARD_CELL
-        inline = ("%-*s  " % (cell_w, clip(cell, cell_w))) if show_cell else ""
+        if inline_w:
+            cell = row.get("inline") or OFF_BOARD_CELL
+            inline = "%-*s  " % (inline_w, clip(cell, inline_w))
+        else:
+            cell = row.get("cell") or OFF_BOARD_CELL
+            inline = ("%-*s  " % (cell_w, clip(cell, cell_w))) if show_cell else ""
         mark = ("%-2s" % row.get("review_glyph", "")) if show_review else ""
         prefix = "%s%-14s #%-5d %s%s" % (
             indent, clip(row["short"], 14), row["number"], mark, inline)
@@ -730,6 +738,18 @@ def load_view(cfg, view, state):
     # Optional: a view-local section order. Only columns with declared options
     # have an order to override -- author/assignee/type stay alphabetical.
     options = apply_order(options, view.get("order"))
+    # Optional: show another issue field inline (Priority inside Status
+    # sections). Width from the declared options, like the column itself.
+    row_field = view.get("row_field")
+    if row_field and view.get("kind") != "prs":
+        rkey = norm_field(row_field)
+        real, row_opts = field_options(fields, row_field)
+        if not real and not err:
+            err = "no issue field %r for row_field" % row_field
+        width = min(17, max([len(o) for o in row_opts] + [len(OFF_BOARD_CELL)]))
+        for r in rows:
+            r["inline"] = r.get("fields", {}).get(rkey, "")
+            r["inline_w"] = width
     # Optional: show a named date field instead of the updated-at column.
     date_field = view.get("date_field")
     if date_field:

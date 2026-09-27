@@ -109,6 +109,22 @@ class PanelCase(unittest.TestCase):
         self.assertTrue(heads)
         self.assertIn("In Development", heads)
 
+    def test_row_field_fills_the_inline_slot_but_not_the_grouping(self):
+        """Sections still come from the column; each row carries Priority."""
+        rows, options, err = self.load("assigned")
+        self.assertEqual(err, "")
+        self.assertTrue(any(r["inline"] for r in rows))
+        for r in rows:
+            self.assertEqual(r["inline"], r["fields"].get("priority", ""))
+            self.assertEqual(r["cell"], r["fields"].get("status", ""))
+        # Declared options, not the rows: "Prod Stop" / "Ekspederes" set it.
+        self.assertEqual({r["inline_w"] for r in rows}, {len("Ekspederes")})
+
+    def test_row_field_on_a_missing_field_says_so(self):
+        view = dict(self.views["assigned"], row_field="Nope")
+        _, _, err = self.m.load_view(self.cfg, view, {})
+        self.assertIn("Nope", err)
+
     def test_excluded_values_produce_no_empty_section(self):
         """The assigned view drops Approved/Deployed; they must not linger as
         empty headers, nor appear in the `s` filter cycle."""
