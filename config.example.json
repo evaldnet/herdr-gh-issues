@@ -15,6 +15,9 @@
   "notify_status_change": true,
   "repo_paths": {},
   "mouse": true,
+  "update_check": true,
+  "update_repo": "evaldnet/herdr-gh-issues",
+  "update_check_hours": 24,
   "views": [
     {
       "id": "assigned",

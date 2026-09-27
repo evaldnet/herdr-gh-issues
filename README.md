@@ -65,6 +65,28 @@ description = "Task detail pane"
 For the sidebar row, add `$issue_status` to `[ui.sidebar.agents]` — see
 *Sidebar task info* below. Finish with `herdr server reload-config`.
 
+## Updating
+
+Herdr has no `plugin update`: a GitHub install is pinned to the commit it was
+cloned at. Reinstalling replaces that checkout and keeps your config and state:
+
+```bash
+herdr plugin install evaldnet/herdr-gh-issues               # latest master
+herdr plugin install evaldnet/herdr-gh-issues --ref v1.5.0  # or a release
+```
+
+The popup runs the new code the next time it opens. The background watcher
+keeps the old code until it is replaced — run the `refresh-meta` action (see
+*Sidebar task info*). Config is never migrated: a release that adds settings
+says so under **Upgrading:** in its notes, and `config.example.json` has them.
+
+You do not have to remember to look. Once a day the popup asks GitHub for the
+latest release and, when it is newer than the installed `version`, marks the
+version in the footer's bottom-right corner (`v1.5.0 ↑1.6.0`) and puts the install command in the footer until your first
+keypress. The lookup runs while the issues load, so it never delays the popup;
+a failed one is silent and retried the next day. `"update_check": false` turns
+it off.
+
 ## Use
 
 Two surfaces over the same list:
@@ -606,6 +628,9 @@ close here lands on a task there over there, so the panel has no write path at a
 | `watch_seconds` | `120` | background re-fetch of every issue space; `0` turns the watcher off |
 | `notify_status_change` | `true` | Herdr notification when a fetch sees a task's status move |
 | `mouse` | `true` | clickable footer in the popup; `false` restores drag-to-select |
+| `update_check` | `true` | daily check for a newer release, shown next to the version bottom right |
+| `update_check_hours` | `24` | how often that check may call GitHub |
+| `update_repo` | `evaldnet/herdr-gh-issues` | whose releases that check reads; point it at a fork |
 
 `repo_paths` is empty by default, which is right for the common case: the
 directory under `space_cwd` is the repo's short name. Add an entry only when a

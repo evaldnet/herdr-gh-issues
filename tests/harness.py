@@ -81,6 +81,14 @@ def main():
     if argv[:2] == ["api", "user"]:
         sys.stdout.write("lars\n")
         return 0
+    if argv[:1] == ["api"] and joined.split()[1].endswith("/releases/latest"):
+        # No fixture: tests choose the tag. Unset means "no release found".
+        tag = os.environ.get("GH_STUB_LATEST")
+        if not tag:
+            sys.stderr.write("HTTP 404: Not Found\n")
+            return 1
+        sys.stdout.write(tag + "\n")
+        return 0
     if argv[:1] == ["api"] and "issue-fields" in joined:
         return out("issue_fields.json")
     if argv[:2] == ["search", "prs"]:
@@ -192,7 +200,7 @@ def fake_env(tmpdir, **extra):
     env = dict(os.environ)
     # Drop any stub controls a previous suite left behind -- they point into a
     # tmpdir that has since been removed.
-    for stale in ("GH_STUB_FAIL", "GH_STUB_LOG", "HERDR_STUB_CALLS",
+    for stale in ("GH_STUB_FAIL", "GH_STUB_LOG", "GH_STUB_LATEST", "HERDR_STUB_CALLS",
                   "HERDR_WORKSPACE_ID", "HERDR_PANE_ID"):
         env.pop(stale, None)
         os.environ.pop(stale, None)

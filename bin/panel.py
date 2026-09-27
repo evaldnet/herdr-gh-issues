@@ -25,6 +25,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from openurl import browser_command, open_url  # noqa: E402
+import update_check  # noqa: E402
 
 locale.setlocale(locale.LC_ALL, "")
 
@@ -78,6 +79,10 @@ DEFAULTS = {
     # Clickable footer. Mouse reporting takes the drag away from the terminal,
     # so plain drag-to-select stops working in the popup; false gives it back.
     "mouse": True,
+    # Once a day, look for a newer GitHub release and flag it by the version.
+    "update_check": True,
+    "update_repo": "evaldnet/herdr-gh-issues",
+    "update_check_hours": 24,
 }
 
 # type: ISSUE_ADVANCED, not ISSUE. Only the advanced endpoint honours `field.`
@@ -545,7 +550,8 @@ def build_display(rows, options, column):
 
 
 def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_filter,
-         options=(), total=0, label_filter="", label_steps_n=0):
+         options=(), total=0, label_filter="", label_steps_n=0, update="",
+         version=""):
     stdscr.erase()
     height, width = stdscr.getmaxyx()
     if height < 4 or width < 30:
@@ -622,6 +628,14 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
         if chosen:
             stdscr.attroff(curses.A_REVERSE)
 
+    # Installed version, bottom right; an available update rides next to it
+    # and, unlike the footer notice, survives the first keypress.
+    ver = ""
+    if version:
+        ver = " v%s%s " % (version, (" ↑%s" % update) if update else "")
+    if len(ver) > (width - 1) // 3:
+        ver = ""
+    left_w = width - 1 - len(ver)
     spans = []
     if filtering:
         foot = "/%s" % needle
@@ -630,10 +644,15 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
     else:
         items = footer_items(show_cell, label_steps_n)
         foot = FOOT_SEP.join(label for label, _ in items)
-        spans = footer_spans(items, width - 1)
+        spans = footer_spans(items, left_w)
     stdscr.attron(curses.color_pair(2))
-    stdscr.addnstr(height - 1, 0, clip(foot, width - 1).ljust(width - 1), width - 1)
+    stdscr.addnstr(height - 1, 0, clip(foot, left_w).ljust(left_w), left_w)
     stdscr.attroff(curses.color_pair(2))
+    if ver:
+        attr = curses.A_BOLD | curses.color_pair(2) if update else curses.A_DIM
+        stdscr.attron(attr)
+        stdscr.addnstr(height - 1, left_w, ver, len(ver))
+        stdscr.attroff(attr)
     stdscr.refresh()
     return spans
 
@@ -867,7 +886,16 @@ def run(stdscr):
                 cache[key] = fresh
         return cache[key]
 
+    checker = update_check.start(cfg, STATE_DIR)
     all_rows, options, status = fetch(view)
+    if checker:
+        # The issue fetch usually outlasts the release lookup; if not, this
+        # open shows the cached answer and the fresh one lands next time.
+        checker.join(0.3)
+    current = update_check.installed_version(PLUGIN_ROOT)
+    update = update_check.newer_release(STATE_DIR, current) if checker else ""
+    if update and not status:
+        status = update_check.notice(update, current, cfg.get("update_repo"))
     needle = ""
     filtering = False
     sel = 0
@@ -904,7 +932,7 @@ def run(stdscr):
             status = "nothing in “%s” right now" % view.get("label", "this view")
         spans = draw(stdscr, display, sel, top, needle, filtering, status, cfg,
                      view, cell_filter, options, len(rows), label_filter,
-                     len(lsteps))
+                     len(lsteps), update, current)
 
         try:
             ch = stdscr.get_wch()
