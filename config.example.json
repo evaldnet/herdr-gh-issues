@@ -23,6 +23,15 @@
       "query": "is:issue is:open assignee:@me",
       "column": "Status",
       "row_field": "Priority",
+      "row_default": "First",
+      "row_order": [
+        "Prod Stop",
+        "Ekspederes",
+        "First",
+        "Second",
+        "Third",
+        "Last"
+      ],
       "order": [
         "Test rejected",
         "In Development",

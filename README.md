@@ -455,6 +455,8 @@ More per-view keys shape the list:
 |-----|--------|
 | `column` | an issue-field name, or `assignees` / `author` / `issuetype` / `none` |
 | `row_field` | issue field shown inline instead of the column, e.g. `Priority` inside Status sections |
+| `row_default` | value a row without `row_field` is shown and ranked as, e.g. `First` |
+| `row_order` | `row_field` values most urgent first; sorts rows inside each section |
 | `order` | values pulled to the front of the section order; the rest keep the field's own |
 | `exclude_labels` | labels whose rows never appear in this view; see *Excluding held work* |
 | `sort_by` | sort by a field; rows holding a value come first, ascending (ISO dates sort as strings) |

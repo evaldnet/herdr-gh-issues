@@ -115,10 +115,31 @@ class PanelCase(unittest.TestCase):
         self.assertEqual(err, "")
         self.assertTrue(any(r["inline"] for r in rows))
         for r in rows:
-            self.assertEqual(r["inline"], r["fields"].get("priority", ""))
+            self.assertEqual(r["inline"], r["fields"].get("priority") or "First")
             self.assertEqual(r["cell"], r["fields"].get("status", ""))
         # Declared options, not the rows: "Prod Stop" / "Ekspederes" set it.
         self.assertEqual({r["inline_w"] for r in rows}, {len("Ekspederes")})
+
+    def test_rows_without_priority_count_as_the_default(self):
+        rows, _, _ = self.load("assigned")
+        for r in rows:
+            self.assertEqual(r["inline"], r["fields"].get("priority") or "First")
+
+    def test_row_order_ranks_rows_by_priority(self):
+        """Flat view, so the ranking alone decides where the one row with a
+        real Priority lands. Sections keep row order, so this is also the
+        order inside each section."""
+        def ranked(order):
+            view = dict(self.views["assigned"], column="none",
+                        row_default="Last", row_order=order)
+            rows, _, _ = self.m.load_view(self.cfg, view, {})
+            return [r["inline"] for r in rows]
+        up = ranked(["First", "Last"])
+        down = ranked(["Last", "First"])
+        self.assertIn("First", up)
+        self.assertIn("Last", up)
+        self.assertEqual(up, sorted(up, key=["First", "Last"].index))
+        self.assertEqual(down, sorted(down, key=["Last", "First"].index))
 
     def test_row_field_on_a_missing_field_says_so(self):
         view = dict(self.views["assigned"], row_field="Nope")

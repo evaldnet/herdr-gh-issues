@@ -61,6 +61,8 @@ DEFAULTS = {
     # column: an org Issue Field name | "author" | "issuetype" | "none".
     # exclude_labels: labels whose rows never appear in the view at all.
     # row_field: issue field shown inline instead of the grouping column.
+    # row_default: value assumed when an issue has none; row_order: rank of
+    # row_field values, most urgent first, used to sort inside each section.
     "views": [
         {"id": "assigned", "label": "issues assigned to me", "kind": "issues",
          "query": "is:issue is:open assignee:@me", "column": "Status"},
@@ -747,9 +749,17 @@ def load_view(cfg, view, state):
         if not real and not err:
             err = "no issue field %r for row_field" % row_field
         width = min(17, max([len(o) for o in row_opts] + [len(OFF_BOARD_CELL)]))
+        fallback = view.get("row_default") or ""
         for r in rows:
-            r["inline"] = r.get("fields", {}).get(rkey, "")
+            r["inline"] = r.get("fields", {}).get(rkey, "") or fallback
             r["inline_w"] = width
+        # Sections keep row order from here on, so this becomes the order
+        # inside each one. Ranked before sort_by, which stays the primary key
+        # (both sorts are stable). Unranked values go last, as the field has them.
+        rank = {o.lower(): i for i, o in
+                enumerate(apply_order(row_opts, view.get("row_order")))}
+        if view.get("row_order"):
+            rows.sort(key=lambda r: rank.get(r["inline"].lower(), len(rank)))
     # Optional: show a named date field instead of the updated-at column.
     date_field = view.get("date_field")
     if date_field:
