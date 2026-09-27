@@ -396,6 +396,7 @@ verified by hand with `herdr plugin log list` and `herdr agent list`, and
 | view | shows | column |
 |------|-------|--------|
 | `assigned` | open issues assigned to you | Tasks-board column |
+| `unassigned` | open issues with no assignee, Approved/Deployed dropped | Status, Priority inline |
 | `review` | open PRs where your review is requested | PR author |
 | `ready` | your open PRs out of draft with no review yet | none |
 | `totest` | board `Ready for test`, not assigned to you | assignee |
@@ -457,6 +458,7 @@ More per-view keys shape the list:
 | `row_field` | issue field shown inline instead of the column, e.g. `Priority` inside Status sections |
 | `row_default` | value a row without `row_field` is shown and ranked as, e.g. `First` |
 | `row_order` | `row_field` values most urgent first; sorts rows inside each section |
+| `limit` | this view's row cap, over the global `limit` (`unassigned` uses 300) |
 | `order` | values pulled to the front of the section order; the rest keep the field's own |
 | `exclude_labels` | labels whose rows never appear in this view; see *Excluding held work* |
 | `sort_by` | sort by a field; rows holding a value come first, ascending (ISO dates sort as strings) |

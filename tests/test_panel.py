@@ -141,6 +141,15 @@ class PanelCase(unittest.TestCase):
         self.assertEqual(up, sorted(up, key=["First", "Last"].index))
         self.assertEqual(down, sorted(down, key=["Last", "First"].index))
 
+    def test_view_limit_overrides_the_global_one(self):
+        rows, _ = self.m.gh_search_issues(self.cfg, dict(self.views["assigned"], limit=2))
+        self.assertEqual(len(rows), 2)
+
+    def test_unassigned_view_ships_in_the_example(self):
+        view = self.views["unassigned"]
+        self.assertIn("no:assignee", view["query"])
+        self.assertGreater(view["limit"], self.cfg["limit"])
+
     def test_row_field_on_a_missing_field_says_so(self):
         view = dict(self.views["assigned"], row_field="Nope")
         _, _, err = self.m.load_view(self.cfg, view, {})

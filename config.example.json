@@ -48,6 +48,37 @@
       "exclude_labels": []
     },
     {
+      "id": "unassigned",
+      "label": "unassigned issues",
+      "kind": "issues",
+      "query": "is:issue is:open no:assignee",
+      "column": "Status",
+      "order": [
+        "Test rejected",
+        "In Development",
+        "Not Started"
+      ],
+      "row_field": "Priority",
+      "row_default": "First",
+      "row_order": [
+        "Prod Stop",
+        "Ekspederes",
+        "First",
+        "Second",
+        "Third",
+        "Last"
+      ],
+      "exclude": {
+        "Status": [
+          "Approved",
+          "Deployed"
+        ]
+      },
+      "limit": 300,
+      "date_field": "Due date",
+      "command": "/github-issue"
+    },
+    {
       "id": "totest",
       "label": "ready for test, not mine",
       "kind": "issues",

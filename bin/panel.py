@@ -250,7 +250,7 @@ def gh_search_issues(cfg, view):
     org = cfg.get("org")
     if org and "org:" not in query and "repo:" not in query:
         query = "org:%s %s" % (org, query)
-    limit = int(cfg.get("limit", 100))
+    limit = int(view.get("limit") or cfg.get("limit", 100))
 
     rows = []
     after = ""
@@ -297,7 +297,7 @@ def gh_search_issues(cfg, view):
 def gh_search_prs(cfg, view):
     """PRs still come from `gh search prs`: issue fields do not apply to them."""
     args = ["gh", "search", "prs", "--state=open",
-            "--limit", str(cfg["limit"]),
+            "--limit", str(view.get("limit") or cfg["limit"]),
             "--json", "repository,number,title,url,updatedAt,labels,isDraft,author",
             "--sort", "updated"]
     org = cfg.get("org")
