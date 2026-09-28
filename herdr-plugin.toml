@@ -34,6 +34,13 @@ description = "Open the panel on the `review` view."
 contexts = ["workspace", "tab", "pane"]
 command = ["sh", "scripts/open.sh", "review"]
 
+[[actions]]
+id = "open-totest"
+title = "GitHub Issues: open ready for test, not mine"
+description = "Open the panel on the `totest` view."
+contexts = ["workspace", "tab", "pane"]
+command = ["sh", "scripts/open.sh", "totest"]
+
 # Sidebar task info for a space opened from an issue. Both events carry
 # HERDR_PANE_ID, and the hook is TTL-cached, so a focus storm costs file reads
 # rather than GitHub calls.

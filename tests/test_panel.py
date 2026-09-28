@@ -409,6 +409,17 @@ class PanelCase(unittest.TestCase):
         self.assertNotIn("--env", plain)
         self.assertEqual(review[review.index("--env") + 1], "HERDR_GHI_VIEW=review")
 
+    def test_every_view_action_names_a_shipped_view(self):
+        """An action's view id is baked into the manifest; a rename in the
+        example config would otherwise quietly open the first view."""
+        import re
+        with open(os.path.join(harness.PLUGIN_ROOT, "herdr-plugin.toml"), "r",
+                  encoding="utf-8") as fh:
+            ids = re.findall(r'"scripts/open\.sh",\s*"([^"]+)"', fh.read())
+        self.assertIn("totest", ids)
+        for vid in ids:
+            self.assertIn(vid, self.views)
+
     def test_screen_opens_on_the_requested_view(self):
         rows = harness.screen(
             ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
