@@ -28,6 +28,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import issue_meta  # noqa: E402  (same directory; resolver + cache live there)
+import update_check  # noqa: E402
 from openurl import browser_command, open_url  # noqa: E402
 
 locale.setlocale(locale.LC_ALL, "")
@@ -251,7 +252,22 @@ def build_lines(cfg, item, data, width):
     return L
 
 
-def draw(stdscr, lines, top, updated_at, status):
+def draw_footer(stdscr, text, version="", update=""):
+    """Footer line with the version tag, same corner as the issue panel's."""
+    height, width = stdscr.getmaxyx()
+    tag = update_check.footer_tag(version, update, width, len(text))
+    left_w = width - 1 - len(tag)
+    try:
+        stdscr.addnstr(height - 1, 0, text.ljust(left_w)[:left_w], left_w,
+                       curses.color_pair(2))
+        if tag:
+            attr = curses.A_BOLD | curses.color_pair(2) if update else curses.A_DIM
+            stdscr.addnstr(height - 1, left_w, tag, len(tag), attr)
+    except curses.error:
+        pass
+
+
+def draw(stdscr, lines, top, updated_at, status, version="", update=""):
     stdscr.erase()
     height, width = stdscr.getmaxyx()
     if height < 4 or width < 24:
@@ -285,12 +301,7 @@ def draw(stdscr, lines, top, updated_at, status):
     more = "" if top + body_h >= len(lines) else " ↓"
     foot = status or ("Updated %s · j/k scroll · r refresh · o browser · q quit%s"
                       % (stamp, more))
-    stdscr.attron(curses.color_pair(2))
-    try:
-        stdscr.addnstr(height - 1, 0, foot.ljust(width - 1)[:width - 1], width - 1)
-    except curses.error:
-        pass
-    stdscr.attroff(curses.color_pair(2))
+    draw_footer(stdscr, foot, version, update)
     stdscr.refresh()
 
 
@@ -305,6 +316,18 @@ def run(stdscr):
     stdscr.timeout(250)
 
     cfg = issue_meta.load_config()
+    version = update_check.installed_version(issue_meta.PLUGIN_ROOT)
+    # The pane lives for hours, so the check is re-armed on every refetch;
+    # update_check.refresh() only calls GitHub once the cache has gone stale.
+    checker = [update_check.start(cfg, issue_meta.STATE_DIR)]
+
+    def pending_update():
+        """The check's answer once, when its thread has just finished; else None."""
+        if checker[0] is None or checker[0].is_alive():
+            return None
+        checker[0] = None
+        return update_check.newer_release(issue_meta.STATE_DIR, version)
+
     item = workspace_item(cfg)
     if not item:
         # Nothing to poll for: this pane is in a space with no issue behind it.
@@ -312,15 +335,17 @@ def run(stdscr):
         # a resize -- a docked pane gets resized, and a footer placed from a
         # stale height lands in the middle of the text.
         stdscr.timeout(-1)
+        idle_update = ""
         while True:
             h, w = stdscr.getmaxyx()
             stdscr.erase()
             stdscr.addnstr(0, 1, "no issue space here", max(0, w - 2), curses.A_BOLD)
             stdscr.addnstr(2, 1, "Open this pane inside a space", max(0, w - 2))
             stdscr.addnstr(3, 1, "created from the issue panel.", max(0, w - 2))
-            stdscr.attron(curses.color_pair(2))
-            stdscr.addnstr(h - 1, 0, " q quit".ljust(w - 1), w - 1)
-            stdscr.attroff(curses.color_pair(2))
+            if checker[0] is not None:
+                checker[0].join(2)
+                idle_update = pending_update() or ""
+            draw_footer(stdscr, " q quit", version, idle_update)
             stdscr.refresh()
             try:
                 ch = stdscr.get_wch()
@@ -348,6 +373,7 @@ def run(stdscr):
     last_stamp = ""
     lines = []
     last_width = -1
+    update = ""
 
     def refetch():
         """Keep the last good detail on failure rather than blanking the pane."""
@@ -368,8 +394,12 @@ def run(stdscr):
         if stamp != last_stamp:
             last_stamp = stamp
             dirty = True
+        found = pending_update()
+        if found is not None and found != update:
+            update = found
+            dirty = True
         if dirty:
-            draw(stdscr, lines, top, last_ok[0], status)
+            draw(stdscr, lines, top, last_ok[0], status, version, update)
             dirty = False
 
         try:
@@ -379,6 +409,8 @@ def run(stdscr):
                 continue
             data, err = refetch()
             last_fetch = time.time()
+            if checker[0] is None:
+                checker[0] = update_check.start(cfg, issue_meta.STATE_DIR)
             if err:
                 backoff = min(backoff * 2, 8)
                 status = err[:120]

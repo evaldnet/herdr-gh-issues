@@ -81,8 +81,8 @@ DEFAULTS = {
     "mouse": True,
     # Once a day, look for a newer GitHub release and flag it by the version.
     "update_check": True,
-    "update_repo": "evaldnet/herdr-gh-issues",
-    "update_check_hours": 24,
+    "update_repo": update_check.DEFAULT_REPO,
+    "update_check_hours": update_check.DEFAULT_HOURS,
 }
 
 # type: ISSUE_ADVANCED, not ISSUE. Only the advanced endpoint honours `field.`
@@ -630,13 +630,7 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
 
     # Installed version, bottom right; an available update rides next to it
     # and, unlike the footer notice, survives the first keypress.
-    ver = ""
-    if version:
-        ver = " v%s%s " % (version, (" ↑%s" % update) if update else "")
-    if len(ver) > (width - 1) // 3:
-        ver = ""
-    left_w = width - 1 - len(ver)
-    spans = []
+    spans, items = [], []
     if filtering:
         foot = "/%s" % needle
     elif status:
@@ -644,6 +638,10 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
     else:
         items = footer_items(show_cell, label_steps_n)
         foot = FOOT_SEP.join(label for label, _ in items)
+    # A status or the filter prompt may run long; only the menu is measured.
+    ver = update_check.footer_tag(version, update, width, len(foot) if items else 0)
+    left_w = width - 1 - len(ver)
+    if items:
         spans = footer_spans(items, left_w)
     stdscr.attron(curses.color_pair(2))
     stdscr.addnstr(height - 1, 0, clip(foot, left_w).ljust(left_w), left_w)

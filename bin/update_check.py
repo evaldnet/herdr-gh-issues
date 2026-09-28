@@ -24,6 +24,9 @@ import threading
 import time
 
 CACHE_NAME = "update_check.json"
+# Defaults shared by the panel and the task pane, which load separate configs.
+DEFAULT_REPO = "evaldnet/herdr-gh-issues"
+DEFAULT_HOURS = 24
 _VERSION_LINE = re.compile(r'^\s*version\s*=\s*"([^"]+)"', re.M)
 
 
@@ -104,10 +107,10 @@ def start(cfg, state_dir):
     """Kick off the check in the background; returns the thread, or None when off."""
     if not cfg.get("update_check", True):
         return None
-    repo = cfg.get("update_repo") or ""
+    repo = cfg.get("update_repo", DEFAULT_REPO) or ""
     if not repo:
         return None
-    ttl = float(cfg.get("update_check_hours", 24)) * 3600
+    ttl = float(cfg.get("update_check_hours", DEFAULT_HOURS)) * 3600
     thread = threading.Thread(target=refresh, args=(state_dir, repo, ttl), daemon=True)
     thread.start()
     return thread
@@ -115,3 +118,21 @@ def start(cfg, state_dir):
 
 def notice(latest, current, repo):
     return "%s available (you have %s) — herdr plugin install %s" % (latest, current, repo)
+
+
+def footer_tag(version, update, width, text_len=0):
+    """" v1.6.0 " or " v1.6.0 ↑1.7.0 " for a footer's right edge.
+
+    The bare version is a nicety: it only shows where the footer's own text
+    (`text_len`) still fits beside it, so it never pushes a key off the edge.
+    An available update is worth that clip and always gets the corner -- up
+    to a third of the line, past which the keys win even over that.
+    """
+    if not version:
+        return ""
+    tag = " v%s%s " % (version, (" ↑%s" % update) if update else "")
+    if len(tag) > (width - 1) // 3:
+        return ""
+    if not update and text_len + len(tag) > width - 1:
+        return ""
+    return tag

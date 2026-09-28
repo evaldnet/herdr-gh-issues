@@ -76,6 +76,37 @@ class UpdateCheckCase(unittest.TestCase):
         self.assertIsNone(self.m.start({"update_check": False, "update_repo": self.REPO},
                                        self.state))
 
+    def test_footer_tag_never_pushes_the_menu_off_for_a_bare_version(self):
+        tag = self.m.footer_tag
+        self.assertEqual(tag("1.6.0", "", 80, 40), " v1.6.0 ")
+        self.assertEqual(tag("1.6.0", "", 64, 57), "")
+        # An update is worth clipping the menu for...
+        self.assertEqual(tag("1.6.0", "1.7.0", 64, 57), " v1.6.0 ↑1.7.0 ")
+        # ...but not on a pane so narrow it would take over the line.
+        self.assertEqual(tag("1.6.0", "1.7.0", 30, 0), "")
+        self.assertEqual(tag("", "1.7.0", 80, 0), "")
+
+    def pane_footer(self, cols, latest=""):
+        env = dict(self.env, HERDR_WORKSPACE_ID="wT1", HERDR_PANE_ID="wT1:p9",
+                   HERDR_PLUGIN_STATE_DIR=tempfile.mkdtemp(dir=self.tmp))
+        if latest:
+            env["GH_STUB_LATEST"] = latest
+        return harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "task_pane.py")],
+            env, cols=cols, rows=30, seconds=6.0)[-1].rstrip()
+
+    def test_task_pane_shows_the_version_when_it_fits(self):
+        version = self.m.installed_version(harness.PLUGIN_ROOT)
+        self.assertTrue(self.pane_footer(90).endswith("v%s" % version))
+
+    def test_task_pane_keeps_its_keys_over_a_bare_version(self):
+        foot = self.pane_footer(64)
+        self.assertIn("q quit", foot)
+        self.assertNotIn(" v1.", foot)
+
+    def test_task_pane_flags_a_newer_release(self):
+        self.assertRegex(self.pane_footer(64, "v9.0.0"), r"↑9\.0\.0$")
+
     def test_screen_shows_the_newer_release(self):
         env = dict(self.env, GH_STUB_LATEST="v9.0.0")
         rows = harness.screen(

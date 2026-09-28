@@ -87,6 +87,11 @@ keypress. The lookup runs while the issues load, so it never delays the popup;
 a failed one is silent and retried the next day. `"update_check": false` turns
 it off.
 
+The task detail pane carries the same tag in the same corner, re-checking as
+it refreshes since it stays up for hours. It is narrow, so it shows only the
+`↑` marker rather than the install command, and the bare version steps aside
+whenever it would push a key off the footer — an update does not.
+
 ## Use
 
 Two surfaces over the same list:
