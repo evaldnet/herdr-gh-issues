@@ -384,6 +384,37 @@ class PanelCase(unittest.TestCase):
         rows, _, _ = self.m.load_view(self.cfg, view, {})
         self.assertFalse([r for r in rows if labelled[0] in r["labels"]])
 
+    # ------------------------------------------------------------ start view
+    def test_start_view_picks_the_named_view(self):
+        vi, err = self.m.start_view_index(self.cfg, "review")
+        self.assertEqual(self.cfg["views"][vi]["id"], "review")
+        self.assertEqual(err, "")
+
+    def test_start_view_unknown_falls_back_and_says_so(self):
+        vi, err = self.m.start_view_index(self.cfg, "nope")
+        self.assertEqual(vi, 0)
+        self.assertIn("'nope'", err)
+        self.assertIn("review", err)
+
+    def test_open_script_passes_the_view_to_the_popup(self):
+        import json, subprocess
+        calls = os.path.join(self.tmp, "open-calls.jsonl")
+        script = os.path.join(harness.PLUGIN_ROOT, "scripts", "open.sh")
+        for arg in ([], ["review"]):
+            env = dict(self.env, HERDR_STUB_CALLS=calls)
+            subprocess.run(["sh", script] + arg, env=env, check=True)
+        with open(calls, "r", encoding="utf-8") as fh:
+            plain, review = [json.loads(l) for l in fh]
+        os.remove(calls)
+        self.assertNotIn("--env", plain)
+        self.assertEqual(review[review.index("--env") + 1], "HERDR_GHI_VIEW=review")
+
+    def test_screen_opens_on_the_requested_view(self):
+        rows = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            dict(self.env, HERDR_GHI_VIEW="review"), cols=100, rows=24, seconds=8.0)
+        self.assertIn("PRs awaiting my review", rows[0])
+
     # ----------------------------------------------------------------- screen
     def test_screen_lists_issues_under_board_sections(self):
         rows = harness.screen(

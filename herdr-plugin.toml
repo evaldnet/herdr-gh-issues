@@ -24,6 +24,16 @@ description = "Open the assigned-issues panel."
 contexts = ["workspace", "tab", "pane"]
 command = ["sh", "scripts/open.sh"]
 
+# One action per view you want on its own key: a keybinding cannot pass
+# arguments, so the view id is baked in here. Any view id from config.json
+# works the same way.
+[[actions]]
+id = "open-review"
+title = "GitHub Issues: open PRs awaiting my review"
+description = "Open the panel on the `review` view."
+contexts = ["workspace", "tab", "pane"]
+command = ["sh", "scripts/open.sh", "review"]
+
 # Sidebar task info for a space opened from an issue. Both events carry
 # HERDR_PANE_ID, and the hook is TTL-cached, so a focus storm costs file reads
 # rather than GitHub calls.

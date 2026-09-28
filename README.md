@@ -60,6 +60,13 @@ key = "prefix+shift+t"
 type = "plugin_action"
 command = "evaldnet.gh-issues.open-task"
 description = "Task detail pane"
+
+# Optional: straight to the PRs awaiting your review.
+[[keys.command]]
+key = "prefix+shift+r"
+type = "plugin_action"
+command = "evaldnet.gh-issues.open-review"
+description = "PRs awaiting my review"
 ```
 
 For the sidebar row, add `$issue_status` to `[ui.sidebar.agents]` — see
@@ -99,10 +106,17 @@ Two surfaces over the same list:
 | surface | key | shape |
 |---------|-----|-------|
 | popup | `prefix+shift+i` | session-modal, 85%×80%. `Enter` hands off and closes it. |
+| review | `prefix+shift+r` | the popup, opened on the `review` view instead of the first. |
 | task | `prefix+shift+t` | docked split pane, **this space's** issue in detail. |
 | sidebar | — | one row per agent, always on. See *Sidebar task info*. |
 
-Or the command palette → "GitHub Issues: open panel" / "open task detail pane".
+Or the command palette → "GitHub Issues: open panel" / "open PRs awaiting my
+review" / "open task detail pane".
+
+A key for another view is one `[[actions]]` block in `herdr-plugin.toml`, since a
+keybinding cannot pass arguments — copy `open-review` and change the view id in
+`["sh", "scripts/open.sh", "review"]` to any `id` from your `views`. An id the
+config does not have opens the first view and names the ones it does have.
 
 | key | action |
 |-----|--------|

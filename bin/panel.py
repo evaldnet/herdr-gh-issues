@@ -456,6 +456,22 @@ def current_view(cfg, index):
     return views[index % len(views)], views
 
 
+def start_view_index(cfg, wanted):
+    """Index of the view a keybinding asked for (HERDR_GHI_VIEW), or 0.
+
+    An id the config does not have falls back to the first view and says so,
+    rather than opening on the wrong list without a word.
+    """
+    if not wanted:
+        return 0, ""
+    _, views = current_view(cfg, 0)
+    for i, v in enumerate(views):
+        if v.get("id") == wanted:
+            return i, ""
+    return 0, "no view %r in config.json (have: %s)" % (
+        wanted, ", ".join(str(v.get("id")) for v in views))
+
+
 def launcher_argv(row, view_command):
     return ["/usr/bin/python3", LAUNCHER,
             "--repo", row["repo"],
@@ -865,7 +881,7 @@ def run(stdscr):
         curses.mouseinterval(0)
     state = {}
     cache = {}
-    vi = 0
+    vi, start_err = start_view_index(cfg, os.environ.get("HERDR_GHI_VIEW", ""))
     view, views = current_view(cfg, vi)
 
     def fetch(v, force=False):
@@ -892,7 +908,9 @@ def run(stdscr):
         checker.join(0.3)
     current = update_check.installed_version(PLUGIN_ROOT)
     update = update_check.newer_release(STATE_DIR, current) if checker else ""
-    if update and not status:
+    if start_err and not status:
+        status = start_err
+    elif update and not status:
         status = update_check.notice(update, current, cfg.get("update_repo"))
     needle = ""
     filtering = False
