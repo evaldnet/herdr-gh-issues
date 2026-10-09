@@ -1,0 +1,44 @@
+{
+  "data": {
+    "organization": {
+      "repositories": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "x"
+        },
+        "nodes": [
+          {
+            "issueOrPullRequest": null
+          },
+          {
+            "issueOrPullRequest": null
+          }
+        ]
+      }
+    }
+  },
+  "errors": [
+    {
+      "type": "NOT_FOUND",
+      "path": [
+        "organization",
+        "repositories",
+        "nodes",
+        0,
+        "issueOrPullRequest"
+      ],
+      "message": "Could not resolve to an issue or pull request with the number of 4510."
+    },
+    {
+      "type": "NOT_FOUND",
+      "path": [
+        "organization",
+        "repositories",
+        "nodes",
+        1,
+        "issueOrPullRequest"
+      ],
+      "message": "Could not resolve to an issue or pull request with the number of 4510."
+    }
+  ]
+}

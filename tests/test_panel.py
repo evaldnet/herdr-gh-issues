@@ -417,7 +417,10 @@ class PanelCase(unittest.TestCase):
                   encoding="utf-8") as fh:
             ids = re.findall(r'"scripts/open\.sh",\s*"([^"]+)"', fh.read())
         self.assertIn("totest", ids)
+        self.assertIn(self.m.LOOKUP_START, ids)
         for vid in ids:
+            if vid == self.m.LOOKUP_START:
+                continue
             self.assertIn(vid, self.views)
 
     def test_screen_opens_on_the_requested_view(self):
@@ -425,6 +428,104 @@ class PanelCase(unittest.TestCase):
             ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
             dict(self.env, HERDR_GHI_VIEW="review"), cols=100, rows=24, seconds=8.0)
         self.assertIn("PRs awaiting my review", rows[0])
+
+    # ---------------------------------------------------------------- lookup
+    def test_parse_lookup_reads_every_way_of_naming_an_issue(self):
+        org = "evaldnet"
+        cases = {
+            "4510": ("", 4510),
+            " #4510 ": ("", 4510),
+            "platform#4510": ("evaldnet/platform", 4510),
+            "other/platform#4510": ("other/platform", 4510),
+            "https://github.com/evaldnet/platform/issues/4510": ("evaldnet/platform", 4510),
+            "https://github.com/evaldnet/mobile/pull/303": ("evaldnet/mobile", 303),
+        }
+        for text, want in cases.items():
+            self.assertEqual(self.m.parse_lookup(text, org), want, text)
+
+    def test_parse_lookup_rejects_what_is_not_a_number(self):
+        # `platform4510` would otherwise read as repo "platform451", issue 0.
+        for text in ("", "abc", "0", "#", "platform4510", "4510x"):
+            self.assertEqual(self.m.parse_lookup(text, "evaldnet"), (None, 0), text)
+
+    def test_lookup_finds_the_number_in_every_repo(self):
+        """NOT_FOUND from repos without the number makes gh exit 1; that is
+        an answer, not a failure."""
+        rows, err = self.m.lookup(self.cfg, "4510")
+        self.assertEqual(err, "")
+        self.assertEqual([(r["repo"], r["is_pr"]) for r in rows],
+                         [("evaldnet/platform", False), ("evaldnet/mobile", True)],
+                         "open issue first, merged PR after")
+        issue, pr = rows
+        self.assertEqual(issue["cell"], "Ready for test", "launcher gets the board status")
+        self.assertEqual(issue["inline"], "Ready for test")
+        self.assertEqual(issue["fields"]["priority"], "Second")
+        self.assertEqual(pr["inline"], "PR merged")
+        self.assertEqual(pr["cell"], "")
+
+    def test_lookup_with_a_repo_asks_only_that_repo(self):
+        log = os.path.join(self.tmp, "gh-lookup.log")
+        os.environ["GH_STUB_LOG"] = log
+        self.addCleanup(os.environ.pop, "GH_STUB_LOG", None)
+        rows, err = self.m.lookup(self.cfg, "platform#4510")
+        self.assertEqual(err, "")
+        self.assertEqual([r["repo"] for r in rows], ["evaldnet/platform"])
+        with open(log, "r", encoding="utf-8") as fh:
+            self.assertEqual(len(fh.read().splitlines()), 1)
+
+    def test_lookup_miss_names_the_number(self):
+        os.environ["GH_STUB_LOOKUP"] = "lookup_miss.json"
+        self.addCleanup(os.environ.pop, "GH_STUB_LOOKUP", None)
+        rows, err = self.m.lookup(self.cfg, "4510")
+        self.assertEqual(rows, [])
+        self.assertEqual(err, "no #4510 in evaldnet")
+
+    def test_lookup_bad_input_says_so_without_asking_github(self):
+        os.environ["GH_STUB_FAIL"] = "1"     # any gh call would surface this
+        self.addCleanup(os.environ.pop, "GH_STUB_FAIL", None)
+        rows, err = self.m.lookup(self.cfg, "hello")
+        self.assertEqual(rows, [])
+        self.assertIn("not an issue number", err)
+
+    def test_lookup_gh_failure_is_an_error_not_a_miss(self):
+        os.environ["GH_STUB_FAIL"] = "1"
+        self.addCleanup(os.environ.pop, "GH_STUB_FAIL", None)
+        rows, err = self.m.lookup(self.cfg, "4510")
+        self.assertEqual(rows, [])
+        self.assertIn("simulated gh failure", err)
+
+    def test_looked_up_rows_take_the_command_of_their_kind(self):
+        rows, _ = self.m.lookup(self.cfg, "4510")
+        issue, pr = rows
+        self.assertEqual(self.m.command_for(self.cfg, issue), "/github-issue")
+        self.assertEqual(self.m.command_for(self.cfg, pr), "/github-review")
+
+    def test_screen_hash_finds_an_issue_outside_the_view(self):
+        rows = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            self.env, cols=100, rows=24, seconds=8.0, keys=b"#4510\rq")
+        self.assertIn("#4510", rows[0])
+        joined = "\n".join(rows)
+        self.assertIn("Skemaer til DR byen", joined)
+        self.assertIn("PR merged", joined)
+        self.assertNotIn("Traceback", joined)
+
+    def test_screen_lookup_start_opens_on_the_prompt(self):
+        rows = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            dict(self.env, HERDR_GHI_VIEW="#"), cols=100, rows=24, seconds=4.0,
+            keys=b"")
+        self.assertIn("find an issue or PR by number", rows[0])
+        self.assertTrue(rows[-1].startswith("# "), rows[-1])
+        self.assertNotIn("In Development", "\n".join(rows), "no view was fetched")
+
+    def test_screen_lookup_start_keeps_asking_after_a_miss(self):
+        rows = harness.screen(
+            ["/usr/bin/python3", os.path.join(harness.BIN, "panel.py")],
+            dict(self.env, HERDR_GHI_VIEW="#", GH_STUB_LOOKUP="lookup_miss.json"),
+            cols=100, rows=24, seconds=4.0, keys=b"4510\r")
+        self.assertIn("# 4510", rows[-1])
+        self.assertIn("no #4510 in evaldnet", rows[-1])
 
     # ----------------------------------------------------------------- screen
     def test_screen_lists_issues_under_board_sections(self):

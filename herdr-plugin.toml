@@ -41,6 +41,15 @@ description = "Open the panel on the `totest` view."
 contexts = ["workspace", "tab", "pane"]
 command = ["sh", "scripts/open.sh", "totest"]
 
+# `#` is not a view: it opens the popup on the number prompt, so the issue you
+# want is a keystroke and its number away, whichever view or status it is in.
+[[actions]]
+id = "open-lookup"
+title = "GitHub Issues: find an issue or PR by number"
+description = "Open the panel on a prompt for an issue number, repo#number or URL."
+contexts = ["workspace", "tab", "pane"]
+command = ["sh", "scripts/open.sh", "#"]
+
 # Sidebar task info for a space opened from an issue. Both events carry
 # HERDR_PANE_ID, and the hook is TTL-cached, so a focus storm costs file reads
 # rather than GitHub calls.

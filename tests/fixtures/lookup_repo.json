@@ -1,0 +1,50 @@
+{
+  "data": {
+    "repository": {
+      "issueOrPullRequest": {
+        "__typename": "Issue",
+        "number": 4510,
+        "title": "Skemaer til DR byen",
+        "url": "https://github.com/evaldnet/platform/issues/4510",
+        "state": "OPEN",
+        "updatedAt": "2026-10-01T09:00:00Z",
+        "repository": {
+          "nameWithOwner": "evaldnet/platform"
+        },
+        "assignees": {
+          "nodes": [
+            {
+              "login": "someone"
+            }
+          ]
+        },
+        "labels": {
+          "nodes": [
+            {
+              "name": "module:skema"
+            }
+          ]
+        },
+        "issueType": {
+          "name": "Feature"
+        },
+        "issueFieldValues": {
+          "nodes": [
+            {
+              "value": "Ready for test",
+              "field": {
+                "name": "Status"
+              }
+            },
+            {
+              "value": "Second",
+              "field": {
+                "name": "Priority"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

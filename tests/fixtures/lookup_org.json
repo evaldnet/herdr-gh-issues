@@ -1,0 +1,96 @@
+{
+  "data": {
+    "organization": {
+      "repositories": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "x"
+        },
+        "nodes": [
+          {
+            "issueOrPullRequest": {
+              "__typename": "PullRequest",
+              "number": 4510,
+              "title": "Old merged change",
+              "url": "https://github.com/evaldnet/mobile/pull/4510",
+              "state": "MERGED",
+              "isDraft": false,
+              "updatedAt": "2025-01-01T09:00:00Z",
+              "repository": {
+                "nameWithOwner": "evaldnet/mobile"
+              },
+              "author": {
+                "login": "lars"
+              },
+              "labels": {
+                "nodes": []
+              }
+            }
+          },
+          {
+            "issueOrPullRequest": null
+          },
+          {
+            "issueOrPullRequest": {
+              "__typename": "Issue",
+              "number": 4510,
+              "title": "Skemaer til DR byen",
+              "url": "https://github.com/evaldnet/platform/issues/4510",
+              "state": "OPEN",
+              "updatedAt": "2026-10-01T09:00:00Z",
+              "repository": {
+                "nameWithOwner": "evaldnet/platform"
+              },
+              "assignees": {
+                "nodes": [
+                  {
+                    "login": "someone"
+                  }
+                ]
+              },
+              "labels": {
+                "nodes": [
+                  {
+                    "name": "module:skema"
+                  }
+                ]
+              },
+              "issueType": {
+                "name": "Feature"
+              },
+              "issueFieldValues": {
+                "nodes": [
+                  {
+                    "value": "Ready for test",
+                    "field": {
+                      "name": "Status"
+                    }
+                  },
+                  {
+                    "value": "Second",
+                    "field": {
+                      "name": "Priority"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "errors": [
+    {
+      "type": "NOT_FOUND",
+      "path": [
+        "organization",
+        "repositories",
+        "nodes",
+        1,
+        "issueOrPullRequest"
+      ],
+      "message": "Could not resolve to an issue or pull request with the number of 4510."
+    }
+  ]
+}

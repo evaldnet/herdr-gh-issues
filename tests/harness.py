@@ -99,6 +99,14 @@ def main():
         for i, a in enumerate(argv):
             if a == "-f" and i + 1 < len(argv) and argv[i + 1].startswith("query="):
                 query = argv[i + 1][len("query="):]
+        if "issueOrPullRequest(number:" in query:
+            # Like real gh: the payload on stdout, and exit 1 when it carries
+            # errors -- NOT_FOUND for every repo without that number.
+            name = ("lookup_repo.json" if "repository(owner:" in query
+                    else os.environ.get("GH_STUB_LOOKUP") or "lookup_org.json")
+            out(name)
+            with open(os.path.join(FIXTURES, name), "r", encoding="utf-8") as fh:
+                return 1 if json.load(fh).get("errors") else 0
         if "search(query:" in query:
             return out("issue_search.json")
         if "closedByPullRequestsReferences" in query:
@@ -200,7 +208,8 @@ def fake_env(tmpdir, **extra):
     env = dict(os.environ)
     # Drop any stub controls a previous suite left behind -- they point into a
     # tmpdir that has since been removed.
-    for stale in ("GH_STUB_FAIL", "GH_STUB_LOG", "GH_STUB_LATEST", "HERDR_STUB_CALLS",
+    for stale in ("GH_STUB_FAIL", "GH_STUB_LOG", "GH_STUB_LATEST", "GH_STUB_LOOKUP",
+                  "HERDR_STUB_CALLS",
                   "HERDR_WORKSPACE_ID", "HERDR_PANE_ID"):
         env.pop(stale, None)
         os.environ.pop(stale, None)

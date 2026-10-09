@@ -3,6 +3,7 @@ set -eu
 HERDR="${HERDR_BIN_PATH:-herdr}"
 # Optional $1: a view id from config.json ("review", "unassigned", ...). The
 # popup starts on that view instead of the first; `v` still cycles from there.
+# "#" is not a view: it opens on the issue-number prompt instead.
 if [ $# -gt 0 ] && [ -n "$1" ]; then
   exec "$HERDR" plugin pane open \
     --plugin evaldnet.gh-issues --entrypoint issues \

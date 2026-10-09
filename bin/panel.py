@@ -85,17 +85,9 @@ DEFAULTS = {
     "update_check_hours": update_check.DEFAULT_HOURS,
 }
 
-# type: ISSUE_ADVANCED, not ISSUE. Only the advanced endpoint honours `field.`
-# qualifiers; plain ISSUE silently returns 0 for them (measured: 0 vs 23 for the
-# same query). Server-side filtering also keeps pagination honest -- filtering
-# locally after a capped fetch under-reports without saying so.
-ISSUE_SEARCH_QUERY = """
-query($q:String!, $after:String) {
-  search(query:$q, type:ISSUE_ADVANCED, first:100, after:$after) {
-    issueCount
-    pageInfo { hasNextPage endCursor }
-    nodes {
-      ... on Issue {
+# Everything a row needs from an Issue node; shared by the view search and the
+# `#` lookup so a looked-up issue carries the same fields as a listed one.
+ISSUE_SELECTION = """
         number title url state updatedAt
         repository { nameWithOwner }
         assignees(first:5) { nodes { login } }
@@ -113,12 +105,60 @@ query($q:String!, $after:String) {
             }
           }
         }
-      }
+"""
+
+# type: ISSUE_ADVANCED, not ISSUE. Only the advanced endpoint honours `field.`
+# qualifiers; plain ISSUE silently returns 0 for them (measured: 0 vs 23 for the
+# same query). Server-side filtering also keeps pagination honest -- filtering
+# locally after a capped fetch under-reports without saying so.
+ISSUE_SEARCH_QUERY = """
+query($q:String!, $after:String) {
+  search(query:$q, type:ISSUE_ADVANCED, first:100, after:$after) {
+    issueCount
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on Issue {%s}
     }
   }
 }
-"""
+""" % ISSUE_SELECTION
 
+# `#` lookup. Search cannot do this: a bare number also matches title and body
+# text, and the exact hit is not reliably on the first page (measured: `repo:x
+# 117` ranked unrelated PRs first). Asking each repo for that number is exact,
+# and it is one request -- issueOrPullRequest sits inside the repo connection.
+# Repos without the number answer NOT_FOUND, which gh turns into exit 1.
+LOOKUP_FRAGMENT = """
+fragment Item on IssueOrPullRequest {
+  __typename
+  ... on Issue {%s}
+  ... on PullRequest {
+    number title url state isDraft updatedAt
+    repository { nameWithOwner }
+    author { login }
+    labels(first:10) { nodes { name } }
+  }
+}
+""" % ISSUE_SELECTION
+
+LOOKUP_ORG_QUERY = """
+query($org:String!, $num:Int!, $after:String) {
+  organization(login:$org) {
+    repositories(first:100, isArchived:false, after:$after) {
+      pageInfo { hasNextPage endCursor }
+      nodes { issueOrPullRequest(number:$num) { ...Item } }
+    }
+  }
+}
+""" + LOOKUP_FRAGMENT
+
+LOOKUP_REPO_QUERY = """
+query($owner:String!, $name:String!, $num:Int!) {
+  repository(owner:$owner, name:$name) {
+    issueOrPullRequest(number:$num) { ...Item }
+  }
+}
+""" + LOOKUP_FRAGMENT
 
 
 def load_config():
@@ -190,7 +230,12 @@ def fetch_review_decisions(rows):
     return ""
 
 
-def gh_graphql(query, variables):
+def gh_graphql(query, variables, allow_missing=False):
+    """Run one GraphQL query -> (data, error text).
+
+    allow_missing: NOT_FOUND errors are answers, not failures -- keep the
+    partial data. gh still exits 1 for them, with the payload on stdout.
+    """
     args = ["gh", "api", "graphql", "-f", "query=%s" % query]
     for k, v in variables.items():
         args += (["-F", "%s=%d" % (k, v)] if isinstance(v, int)
@@ -199,15 +244,24 @@ def gh_graphql(query, variables):
         proc = subprocess.run(args, capture_output=True, text=True, timeout=90)
     except Exception as exc:
         return None, "could not run gh: %s" % exc
-    if proc.returncode != 0:
+    if proc.returncode != 0 and not allow_missing:
         msg = (proc.stderr.strip() or "gh exited %d" % proc.returncode)
         return None, msg.splitlines()[0][:140]
     try:
         payload = json.loads(proc.stdout or "{}")
     except ValueError as exc:
+        if proc.returncode != 0:
+            msg = (proc.stderr.strip() or "gh exited %d" % proc.returncode)
+            return None, msg.splitlines()[0][:140]
         return None, "bad JSON: %s" % exc
-    if payload.get("errors"):
-        return None, payload["errors"][0].get("message", "?")[:140]
+    errors = payload.get("errors") or []
+    if allow_missing:
+        errors = [e for e in errors if e.get("type") != "NOT_FOUND"]
+    if errors:
+        return None, errors[0].get("message", "?")[:140]
+    if proc.returncode != 0 and not payload.get("data"):
+        msg = (proc.stderr.strip() or "gh exited %d" % proc.returncode)
+        return None, msg.splitlines()[0][:140]
     return payload.get("data") or {}, ""
 
 
@@ -249,6 +303,30 @@ def field_options(fields, wanted):
     return "", []
 
 
+def issue_row(node):
+    """One GraphQL Issue node (ISSUE_SELECTION) -> a panel row."""
+    repo = (node.get("repository") or {}).get("nameWithOwner") or ""
+    values = {}
+    for v in ((node.get("issueFieldValues") or {}).get("nodes") or []):
+        fname = ((v or {}).get("field") or {}).get("name")
+        if fname:
+            values[norm_field(fname)] = v.get("value") or ""
+    return {
+        "repo": repo, "short": repo.split("/")[-1],
+        "number": node.get("number") or 0,
+        "title": (node.get("title") or "").replace("\n", " ").strip(),
+        "url": node.get("url") or "",
+        "updated": (node.get("updatedAt") or "")[:10],
+        "labels": [l.get("name", "") for l in
+                   ((node.get("labels") or {}).get("nodes") or [])],
+        "assignees": [a.get("login", "") for a in
+                      ((node.get("assignees") or {}).get("nodes") or [])],
+        "issue_type": (node.get("issueType") or {}).get("name") or "",
+        "fields": values, "author": "", "is_pr": False, "cell": "",
+        "date_display": "",
+    }
+
+
 def gh_search_issues(cfg, view):
     """Search issues over GraphQL so issue-field values come back with them."""
     query = view.get("query") or "is:issue is:open"
@@ -268,28 +346,8 @@ def gh_search_issues(cfg, view):
             return rows, err
         block = data.get("search") or {}
         for node in (block.get("nodes") or []):
-            if not node:
-                continue
-            repo = (node.get("repository") or {}).get("nameWithOwner") or ""
-            values = {}
-            for v in ((node.get("issueFieldValues") or {}).get("nodes") or []):
-                fname = ((v or {}).get("field") or {}).get("name")
-                if fname:
-                    values[norm_field(fname)] = v.get("value") or ""
-            rows.append({
-                "repo": repo, "short": repo.split("/")[-1],
-                "number": node.get("number") or 0,
-                "title": (node.get("title") or "").replace("\n", " ").strip(),
-                "url": node.get("url") or "",
-                "updated": (node.get("updatedAt") or "")[:10],
-                "labels": [l.get("name", "") for l in
-                           ((node.get("labels") or {}).get("nodes") or [])],
-                "assignees": [a.get("login", "") for a in
-                              ((node.get("assignees") or {}).get("nodes") or [])],
-                "issue_type": (node.get("issueType") or {}).get("name") or "",
-                "fields": values, "author": "", "is_pr": False, "cell": "",
-                "date_display": "",
-            })
+            if node:
+                rows.append(issue_row(node))
         page = block.get("pageInfo") or {}
         if not page.get("hasNextPage"):
             break
@@ -404,6 +462,117 @@ def apply_exclude_labels(rows, names):
             if not drop.intersection(l.lower() for l in (r.get("labels") or []))]
 
 
+LOOKUP_URL = re.compile(
+    r"github\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+)/(?:issues|pull)/(\d+)")
+# A repo name only counts with its `#`: `core4510` is a typo, not repo "core".
+LOOKUP_REF = re.compile(r"^(?:(?:([A-Za-z0-9._-]+)/)?([A-Za-z0-9._-]+)#|#)?(\d+)$")
+
+
+def parse_lookup(text, org):
+    """`4510`, `#4510`, `core#4510`, `owner/core#4510` or an issue/PR URL
+    -> (repo or "", number). A bare number searches the whole org; (None, 0)
+    means the input is none of these."""
+    text = (text or "").strip()
+    hit = LOOKUP_URL.search(text)
+    if hit:
+        return "%s/%s" % (hit.group(1), hit.group(2)), int(hit.group(3))
+    hit = LOOKUP_REF.match(text)
+    if not hit or int(hit.group(3)) <= 0:
+        return None, 0
+    owner, name = hit.group(1), hit.group(2)
+    repo = "%s/%s" % (owner or org, name) if name else ""
+    return repo, int(hit.group(3))
+
+
+def lookup_row(node, status_field):
+    """An issueOrPullRequest node -> a panel row, its state in the inline slot.
+
+    The slot shows the board column for an open issue, else what GitHub says
+    -- a lookup reaches closed and merged items the views never list.
+    """
+    state = (node.get("state") or "").lower()
+    if node.get("__typename") == "PullRequest":
+        repo = (node.get("repository") or {}).get("nameWithOwner") or ""
+        row = {
+            "repo": repo, "short": repo.split("/")[-1],
+            "number": node.get("number") or 0,
+            "title": (node.get("title") or "").replace("\n", " ").strip(),
+            "url": node.get("url") or "",
+            "updated": (node.get("updatedAt") or "")[:10],
+            "labels": [l.get("name", "") for l in
+                       ((node.get("labels") or {}).get("nodes") or [])],
+            "assignees": [], "issue_type": "", "fields": {},
+            "author": (node.get("author") or {}).get("login") or "",
+            "is_pr": True, "cell": "", "date_display": "",
+        }
+        row["inline"] = "PR draft" if node.get("isDraft") and state == "open" \
+            else "PR %s" % state
+        return row
+    row = issue_row(node)
+    # `cell` is what the launcher passes on as the board status.
+    row["cell"] = row["fields"].get(norm_field(status_field), "")
+    row["inline"] = (row["cell"] or "open") if state == "open" else state
+    return row
+
+
+def lookup(cfg, text):
+    """Find an issue or PR by number, wherever it sits -> (rows, error)."""
+    org = cfg.get("org") or ""
+    repo, number = parse_lookup(text, org)
+    if repo is None:
+        return [], "not an issue number: %r (try 4510, core#4510 or a URL)" % text
+    if not repo and not org:
+        return [], "no `org` set — use repo#number, or put an org in config.json"
+    nodes = []
+    if repo:
+        owner, _, name = repo.partition("/")
+        data, err = gh_graphql(LOOKUP_REPO_QUERY,
+                               {"owner": owner, "name": name, "num": number},
+                               allow_missing=True)
+        if err:
+            return [], err
+        nodes.append(((data or {}).get("repository") or {}).get("issueOrPullRequest"))
+    else:
+        after = ""
+        while True:
+            variables = {"org": org, "num": number}
+            if after:
+                variables["after"] = after
+            data, err = gh_graphql(LOOKUP_ORG_QUERY, variables, allow_missing=True)
+            if err:
+                return [], err
+            block = ((data or {}).get("organization") or {}).get("repositories") or {}
+            nodes += [n.get("issueOrPullRequest") for n in (block.get("nodes") or [])
+                      if n]
+            page = block.get("pageInfo") or {}
+            after = page.get("endCursor") or ""
+            if not page.get("hasNextPage") or not after:
+                break
+    status_field = cfg.get("status_field") or "Status"
+    rows = [lookup_row(n, status_field) for n in nodes if n]
+    # Open work first, issues before PRs; GitHub's repo order otherwise.
+    rows.sort(key=lambda r: (r["inline"] in ("closed", "PR closed", "PR merged"),
+                             r["is_pr"]))
+    width = min(17, max([len(r["inline"]) for r in rows] + [len(OFF_BOARD_CELL)]))
+    for r in rows:
+        r["inline_w"] = width
+    if not rows:
+        where = repo or org
+        return [], "no #%d in %s" % (number, where)
+    return rows, ""
+
+
+def command_for(cfg, row):
+    """Enter's slash command for a looked-up row, which belongs to no view:
+    the first view of the same kind decides, as if it had been listed there."""
+    kind = "prs" if row.get("is_pr") else "issues"
+    _, views = current_view(cfg, 0)
+    for v in views:
+        if v.get("kind", "issues") == kind and v.get("command"):
+            return v["command"]
+    return "/github-issue"
+
+
 def matches(row, needle, cell_filter, label_filter=""):
     if cell_filter == OFF_BOARD:
         if row.get("cell"):
@@ -454,6 +623,10 @@ def current_view(cfg, index):
     if not views:
         views = DEFAULTS["views"]
     return views[index % len(views)], views
+
+
+# HERDR_GHI_VIEW value that opens the popup on the `#` prompt instead of a view.
+LOOKUP_START = "#"
 
 
 def start_view_index(cfg, wanted):
@@ -567,7 +740,7 @@ def build_display(rows, options, column):
 
 def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_filter,
          options=(), total=0, label_filter="", label_steps_n=0, update="",
-         version=""):
+         version="", prompt=""):
     stdscr.erase()
     height, width = stdscr.getmaxyx()
     if height < 4 or width < 30:
@@ -647,7 +820,9 @@ def draw(stdscr, display, sel, top, needle, filtering, status, cfg, view, cell_f
     # Installed version, bottom right; an available update rides next to it
     # and, unlike the footer notice, survives the first keypress.
     spans, items = [], []
-    if filtering:
+    if prompt:
+        foot = prompt
+    elif filtering:
         foot = "/%s" % needle
     elif status:
         foot = status
@@ -681,7 +856,7 @@ def footer_items(show_cell, label_steps_n):
         items.append(("s column", "s"))
     if label_steps_n > 1:
         items.append(("l label", "l"))
-    items += [("/ filter", "/"), ("r refresh", "r")]
+    items += [("/ filter", "/"), ("# number", "#"), ("r refresh", "r")]
     if not show_cell:
         items.append(("o browser", "o"))
     items.append(("q quit", "q"))
@@ -881,8 +1056,14 @@ def run(stdscr):
         curses.mouseinterval(0)
     state = {}
     cache = {}
-    vi, start_err = start_view_index(cfg, os.environ.get("HERDR_GHI_VIEW", ""))
+    wanted = os.environ.get("HERDR_GHI_VIEW", "")
+    # `#` opens straight on the number prompt and fetches no view at all, so
+    # the popup is typeable at once; esc then closes it rather than loading one.
+    asking = wanted == LOOKUP_START
+    vi, start_err = start_view_index(cfg, "" if asking else wanted)
     view, views = current_view(cfg, vi)
+    answer = ""        # what is typed at the `#` prompt
+    looked_up = ""     # the lookup now on screen, "" while showing a view
 
     def fetch(v, force=False):
         key = v.get("id")
@@ -900,8 +1081,19 @@ def run(stdscr):
                 cache[key] = fresh
         return cache[key]
 
+    def run_lookup(text):
+        stdscr.erase()
+        stdscr.addstr(0, 0, "looking up %s…" % text)
+        stdscr.refresh()
+        return lookup(cfg, text)
+
     checker = update_check.start(cfg, STATE_DIR)
-    all_rows, options, status = fetch(view)
+    if asking:
+        all_rows, options, status = [], [], ""
+        view = {"id": LOOKUP_START, "label": "find an issue or PR by number",
+                "column": "none"}
+    else:
+        all_rows, options, status = fetch(view)
     if checker:
         # The issue fetch usually outlasts the release lookup; if not, this
         # open shows the cached answer and the fresh one lands next time.
@@ -944,11 +1136,15 @@ def run(stdscr):
             top = selpos - body_h + 1
         top = max(0, min(top, max(0, len(display) - 1)))
 
-        if not all_rows and not status:
+        if not all_rows and not status and not asking:
             status = "nothing in “%s” right now" % view.get("label", "this view")
+        # A miss stays beside the prompt until the next keystroke.
+        prompt = ("# %s  (%s)" % (answer, status or
+                                  "4510, core#4510 or a URL · enter find · esc cancel")
+                  if asking else "")
         spans = draw(stdscr, display, sel, top, needle, filtering, status, cfg,
                      view, cell_filter, options, len(rows), label_filter,
-                     len(lsteps), update, current)
+                     len(lsteps), update, current, prompt)
 
         try:
             ch = stdscr.get_wch()
@@ -971,6 +1167,39 @@ def run(stdscr):
                 continue
             ch = key
 
+        if asking:
+            if ch in ("\n", "\r", curses.KEY_ENTER):
+                asking = False
+                if not answer.strip():
+                    if view.get("id") == LOOKUP_START:
+                        return None
+                    continue
+                found, status = run_lookup(answer)
+                if found:
+                    looked_up = answer.strip()
+                    all_rows, options = found, []
+                    repo, number = parse_lookup(looked_up, cfg.get("org"))
+                    view = {"id": LOOKUP_START, "column": "none",
+                            "label": "%s#%d" % (repo.split("/")[-1], number)}
+                    steps, step = [""], 0
+                    lsteps, lstep = label_steps(all_rows), 0
+                    needle, sel, top = "", 0, 0
+                elif view.get("id") == LOOKUP_START and not all_rows:
+                    # Nothing behind the prompt to fall back to: ask again,
+                    # with the miss still in the status line.
+                    asking = True
+            elif ch == "\x1b":
+                asking = False
+                if view.get("id") == LOOKUP_START and not all_rows:
+                    return None
+            elif ch in (curses.KEY_BACKSPACE, "\x7f", "\b"):
+                answer = answer[:-1]
+                status = ""
+            elif isinstance(ch, str) and ch.isprintable():
+                answer += ch
+                status = ""
+            continue
+
         if filtering:
             if ch in ("\n", "\r", curses.KEY_ENTER):
                 filtering = False
@@ -985,11 +1214,17 @@ def run(stdscr):
             continue
 
         status = ""
-        if ch in ("q", "\x1b"):
+        if ch == "\x1b" and looked_up:
+            ch = "v"            # esc backs out of a lookup to the view under it
+        elif ch in ("q", "\x1b"):
             return None
         if ch == "/":
             filtering = True
             needle = ""
+            continue
+        if ch == "#":
+            asking = True
+            answer = ""
             continue
         if ch in ("j", curses.KEY_DOWN):
             sel = min(sel + 1, max(0, len(visible) - 1))
@@ -1004,7 +1239,11 @@ def run(stdscr):
         elif ch == "G":
             sel = max(0, len(visible) - 1)
         elif ch in ("v", "V", "\t"):
-            vi = (vi + (-1 if ch == "V" else 1)) % len(views)
+            if looked_up or view.get("id") == LOOKUP_START:
+                # Back to the view the lookup covered, not on to the next one.
+                looked_up = ""
+            else:
+                vi = (vi + (-1 if ch == "V" else 1)) % len(views)
             view, views = current_view(cfg, vi)
             all_rows, options, status = fetch(view)
             steps = cycle_steps(all_rows, options, view.get("column", "none"))
@@ -1030,6 +1269,11 @@ def run(stdscr):
                 lstep = (lstep + (1 if ch == "l" else -1)) % len(lsteps)
                 sel = 0
                 top = 0
+        elif ch == "r" and looked_up:
+            found, status = run_lookup(looked_up)
+            if found:
+                all_rows = found
+            sel = 0
         elif ch == "r":
             state.pop("fields", None)
             state.pop("fields_err", None)
@@ -1053,6 +1297,8 @@ def run(stdscr):
         elif ch in ("\n", "\r", curses.KEY_ENTER):
             if visible:
                 visible[sel]["_view_index"] = vi
+                if looked_up:
+                    visible[sel]["_command"] = command_for(cfg, visible[sel])
                 return visible[sel]
     return None
 
@@ -1070,7 +1316,8 @@ def main():
     if not chosen:
         return 0
     view, _views = current_view(cfg, chosen.get("_view_index", 0))
-    detach_launcher(cfg, chosen, view.get("command") or "/github-issue")
+    detach_launcher(cfg, chosen, chosen.get("_command") or view.get("command")
+                    or "/github-issue")
     sys.stdout.write("briefing claude on %s#%d\u2026\n" % (chosen["repo"], chosen["number"]))
     sys.stdout.flush()
     return 0

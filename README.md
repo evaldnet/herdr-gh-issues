@@ -68,6 +68,13 @@ key = "prefix+shift+r"
 type = "plugin_action"
 command = "evaldnet.gh-issues.open-totest"
 description = "Ready for test, not mine"
+
+# Optional: straight to the issue-number prompt (see *Find by number*).
+[[keys.command]]
+key = "prefix+shift+n"
+type = "plugin_action"
+command = "evaldnet.gh-issues.open-lookup"
+description = "GitHub issue by number"
 ```
 
 For the sidebar row, add `$issue_status` to `[ui.sidebar.agents]` — see
@@ -108,11 +115,12 @@ Two surfaces over the same list:
 |---------|-----|-------|
 | popup | `prefix+shift+i` | session-modal, 85%×80%. `Enter` hands off and closes it. |
 | to test | `prefix+shift+r` | the popup, opened on the `totest` view instead of the first. |
+| by number | `prefix+shift+n` | the popup, opened on the `#` prompt. No view is fetched. |
 | task | `prefix+shift+t` | docked split pane, **this space's** issue in detail. |
 | sidebar | — | one row per agent, always on. See *Sidebar task info*. |
 
-Or the command palette → "GitHub Issues: open panel" / "open ready for test,
-not mine" / "open PRs awaiting my review" / "open task detail pane".
+Or the command palette → "GitHub Issues: open panel" / "find an issue or PR
+by number" / "open ready for test, not mine" / "open PRs awaiting my review" / "open task detail pane".
 
 A key for another view is one `[[actions]]` block in `herdr-plugin.toml`, since a
 keybinding cannot pass arguments — copy `open-totest` and change the view id in
@@ -124,6 +132,7 @@ config does not have opens the first view and names the ones it does have.
 | `j` / `k` / arrows | move |
 | `g` / `G` | top / bottom |
 | `/` | filter (Danish text works; `esc` clears) |
+| `#` | find an issue or PR by number, in any view, status or state |
 | `v` / `V` | cycle view forward / back (`tab` also works) |
 | `s` / `S` | cycle the extra-column filter forward / back |
 | `l` / `L` | cycle the label filter forward / back |
@@ -138,6 +147,29 @@ set `mouse` to `false` to get selection back. The task pane stays
 keyboard-only for now: Herdr 0.9.1 hands tab-bar clicks to a focused pane
 that asked for the mouse ([herdr#4382](https://github.com/herdrdev/herdr/issues/4382)),
 which a docked pane would trip over and a modal popup does not.
+
+## Find by number
+
+`#` asks for a number and finds it wherever it is: not in the current view,
+someone else's, closed, or a PR. All of these work:
+
+    4510                                        every repo in the org
+    core#4510   Mobilplan/core#4510             one repo
+    https://github.com/Mobilplan/core/issues/4510
+
+A bare number asks every non-archived org repo for it in one GraphQL request,
+which is exact, unlike search, where `4510` also matches text. Issue numbers
+are per repo, so several repos can answer. The hits replace the list: open
+issues first, then PRs, then closed and merged items. The column shows the
+board status, or GitHub's state for anything not open. `enter`, `o` and `r`
+work as usual. `esc` or `v` goes back to the view you came from. A looked-up
+item has no view, so `enter` uses the `command` of the first view of its kind.
+In the example config, that sends `/github-issue` for issues and
+`/github-review` for PRs.
+
+The `open-lookup` action opens the popup straight on the prompt without
+fetching a view. A miss stays on the prompt so you can fix the number, and `esc`
+closes the popup.
 
 ## What Enter sends
 
