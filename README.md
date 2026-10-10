@@ -71,7 +71,7 @@ description = "Ready for test, not mine"
 
 # Optional: straight to the issue-number prompt (see *Find by number*).
 [[keys.command]]
-key = "prefix+shift+n"
+key = "prefix+shift+f"
 type = "plugin_action"
 command = "evaldnet.gh-issues.open-lookup"
 description = "GitHub issue by number"
@@ -115,7 +115,7 @@ Two surfaces over the same list:
 |---------|-----|-------|
 | popup | `prefix+shift+i` | session-modal, 85%×80%. `Enter` hands off and closes it. |
 | to test | `prefix+shift+r` | the popup, opened on the `totest` view instead of the first. |
-| by number | `prefix+shift+n` | the popup, opened on the `#` prompt. No view is fetched. |
+| by number | `prefix+shift+f` | the popup, opened on the `#` prompt. No view is fetched. |
 | task | `prefix+shift+t` | docked split pane, **this space's** issue in detail. |
 | sidebar | — | one row per agent, always on. See *Sidebar task info*. |
 
