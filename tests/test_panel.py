@@ -150,6 +150,13 @@ class PanelCase(unittest.TestCase):
         self.assertIn("no:assignee", view["query"])
         self.assertGreater(view["limit"], self.cfg["limit"])
 
+    def test_approved_view_ships_in_the_example(self):
+        """`assigned` excludes Approved, so this view is the only list of them."""
+        view = self.views["approved"]
+        self.assertIn("assignee:@me", view["query"])
+        self.assertIn('field.Status:"Approved"', view["query"])
+        self.assertIn("Approved", self.views["assigned"]["exclude"]["Status"])
+
     def test_row_field_on_a_missing_field_says_so(self):
         view = dict(self.views["assigned"], row_field="Nope")
         _, _, err = self.m.load_view(self.cfg, view, {})
@@ -417,6 +424,7 @@ class PanelCase(unittest.TestCase):
                   encoding="utf-8") as fh:
             ids = re.findall(r'"scripts/open\.sh",\s*"([^"]+)"', fh.read())
         self.assertIn("totest", ids)
+        self.assertIn("approved", ids)
         self.assertIn(self.m.LOOKUP_START, ids)
         for vid in ids:
             if vid == self.m.LOOKUP_START:

@@ -51,6 +51,23 @@
       "exclude_labels": []
     },
     {
+      "id": "approved",
+      "label": "my approved issues",
+      "kind": "issues",
+      "query": "is:issue is:open assignee:@me field.Status:\"Approved\"",
+      "column": "Priority",
+      "order": [
+        "Prod Stop",
+        "Ekspederes",
+        "First",
+        "Second",
+        "Third",
+        "Last"
+      ],
+      "date_field": "Deployment date",
+      "command": "/github-issue"
+    },
+    {
       "id": "unassigned",
       "label": "unassigned issues",
       "kind": "issues",

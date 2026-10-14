@@ -62,12 +62,18 @@ command = "evaldnet.gh-issues.open-task"
 description = "Task detail pane"
 
 # Optional: straight to a view. `open-totest` = ready for test, not mine;
-# `open-review` = PRs awaiting my review.
+# `open-approved` = my approved issues; `open-review` = PRs awaiting my review.
 [[keys.command]]
 key = "prefix+shift+r"
 type = "plugin_action"
 command = "evaldnet.gh-issues.open-totest"
 description = "Ready for test, not mine"
+
+[[keys.command]]
+key = "prefix+shift+a"
+type = "plugin_action"
+command = "evaldnet.gh-issues.open-approved"
+description = "My approved issues"
 
 # Optional: straight to the issue-number prompt (see *Find by number*).
 [[keys.command]]
@@ -115,12 +121,13 @@ Two surfaces over the same list:
 |---------|-----|-------|
 | popup | `prefix+shift+i` | session-modal, 85%×80%. `Enter` hands off and closes it. |
 | to test | `prefix+shift+r` | the popup, opened on the `totest` view instead of the first. |
+| approved | `prefix+shift+a` | the popup, opened on the `approved` view. |
 | by number | `prefix+shift+f` | the popup, opened on the `#` prompt. No view is fetched. |
 | task | `prefix+shift+t` | docked split pane, **this space's** issue in detail. |
 | sidebar | — | one row per agent, always on. See *Sidebar task info*. |
 
 Or the command palette → "GitHub Issues: open panel" / "find an issue or PR
-by number" / "open ready for test, not mine" / "open PRs awaiting my review" / "open task detail pane".
+by number" / "open ready for test, not mine" / "open my approved issues" / "open PRs awaiting my review" / "open task detail pane".
 
 A key for another view is one `[[actions]]` block in `herdr-plugin.toml`, since a
 keybinding cannot pass arguments — copy `open-totest` and change the view id in
@@ -465,11 +472,12 @@ verified by hand with `herdr plugin log list` and `herdr agent list`, and
 
 ## Views
 
-`v` cycles three views, each a `gh search` with different flags:
+`v` cycles the views in `views`, each a search with its own query or flags:
 
 | view | shows | column |
 |------|-------|--------|
 | `assigned` | open issues assigned to you | Tasks-board column |
+| `approved` | your open issues on board `Approved` — what `assigned` hides | Priority |
 | `unassigned` | open issues with no assignee, Approved/Deployed dropped | Status, Priority inline |
 | `review` | open PRs where your review is requested | PR author |
 | `ready` | your open PRs out of draft with no review yet | none |
