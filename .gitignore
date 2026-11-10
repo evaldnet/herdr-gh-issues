@@ -3,3 +3,5 @@ __pycache__/
 # The Herdr app writes these into every mod folder, symlinked ones included.
 app/jsconfig.json
 app/*.d.ts
+# Machine-specific notes for Claude Code; CLAUDE.md is the shared one.
+CLAUDE.local.md
