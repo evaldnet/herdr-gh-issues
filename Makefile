@@ -2,7 +2,7 @@
 # is what Herdr actually runs the plugin with, so it is what the tests use too.
 PYTHON ?= /usr/bin/python3
 
-.PHONY: test test-live test-verbose test-interpreters lint check-app
+.PHONY: test test-live test-verbose test-interpreters lint check-app sync-agents
 
 test:
 	$(PYTHON) tests/run.py
@@ -29,3 +29,10 @@ lint:
 # Needs herdr-app on PATH; it does not lay out the list or run its fetches.
 check-app:
 	herdr-app check app
+
+# Rebuild gh-agents and gh-main (the agents list with task status, and the
+# layout that shows it) from the Herdr app's current shipped files. Run after
+# a Herdr update; gh-agents says when it is behind. `--check` / `--dry-run`
+# via ARGS, e.g. `make sync-agents ARGS=--check`.
+sync-agents:
+	$(PYTHON) bin/sync_agents.py $(ARGS)

@@ -116,6 +116,9 @@ def main():
             return out("closing_issues.json")
         if "headRefName" in query:
             return out("pr_detail.json")
+        if "i0: repository(" in query:
+            # list.py --status: one alias per issue space.
+            return out("status_batch.json")
         if "issueFieldValues" in query and "issue(number:" in query:
             return out("issue_meta.json")
         if "pullRequest(number:" in query and "reviewDecision" in query:

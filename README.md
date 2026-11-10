@@ -95,8 +95,9 @@ For the sidebar row, add `$issue_status` to `[ui.sidebar.agents]` — see
 
 `app/` is the same issue list as a mod for the Herdr desktop app: a popup over
 the window, grouped by board column, with the views from `config.json` as tabs
-along the top. It covers starting a task. The task pane, the sidebar status
-row and the status-change watcher are not ported yet.
+along the top. `agents/` puts each task's status under its agent in the agents
+list and runs the background watcher; see *Task status in the agents list*.
+The task detail pane is not ported yet.
 
 ### Install
 
@@ -171,6 +172,7 @@ terminal plugin runs, not a JavaScript copy of it:
     list.py                  the views and space_cwd, no network
     list.py <view id>        that view's rows
     list.py --lookup <text>  find an issue or PR by number or URL
+    list.py --status <ref>.. task status per issue space, for gh-agents
 
 The Tern plugin calls the same script (it symlinks `bin/list.py` into its own
 folder). `tests/test_list.py` pins the row keys both of them read.
@@ -181,6 +183,64 @@ minutes on `tab`.
 
 The app hot-reloads a mod when one of its files changes, but not through the
 symlink: edits under `app/` show up the next time the popup opens.
+
+### Task status in the agents list
+
+```
+● #4509 · Påmindelse ny v…       <1m
+  Ready for test · Feature
+  Second
+● #3811 · Hash validering a…     <1m
+  In Development · Feature
+```
+
+Under each agent in an issue space (one named `#<n>`): the `status_field`
+column, the issue type, then the `priority_field` column, in GitHub's own
+option colours. `closed` wins over the column, as in the terminal plugin's
+sidebar. The values come from `issue_meta.py`'s `tokens_for()`, so both read
+the same fields.
+
+The agents list is a mod Herdr ships, with no extension point, and Herdr
+replaces its shipped mods and layouts on every start. So this lives in
+**clones**: `gh-agents`, Herdr's `agents` mod with three marked lines added,
+and `gh-main`, Herdr's `main` layout with its sidebar pointed at `gh-agents`.
+
+```bash
+make sync-agents                  # build both; switches the window to gh-main
+make sync-agents ARGS=--check     # exit 1 if missing or behind Herdr
+make sync-agents ARGS=--dry-run   # say what it would do
+```
+
+The app makes the clones itself (`mod.clone`, `layout.clone`), so it renames
+what it knows to rename. `bin/sync_agents.py` then copies in
+`agents/gh-status.js` and applies the edits, each anchored on a line of
+Herdr's code that must occur exactly once. If an update moved one, the sync
+stops and puts the previous clone back rather than guess. Clicks (sidebar
+width and the like) are kept in `layouts/.state` and survive a rebuild;
+edits to `gh-main.json` itself do not.
+
+Clones never get Herdr's updates. Run `make sync-agents` again after one:
+`gh-agents` compares `installed.json` with what it was built from, and posts a
+toast on start when Herdr's agents list or main layout has moved on. Going
+back is `layout.switch` to `main`; the clones can then be deleted.
+
+**The watcher** runs in `gh-agents`, which is always on screen. Every
+`watch_seconds` (`0` turns it off) it reads every issue space's status with
+`list.py --status` (one GraphQL request for all of them), and a space that
+appears is read within 30 seconds. When a status has moved, it posts a toast,
+unless `notify_status_change` is `false`:
+
+    core#4907: In Development → Validation
+
+The last values are kept in shared state, so a move that happened while the
+app was closed is reported on the next start. A failed fetch keeps them too,
+rather than blanking every row.
+
+A space name does not say which repo `#4884` is in. The popup records it when
+it starts a space, under the shared key `gh-issues.spaces`; that matters for a
+PR row, whose issue can be in another repo. A space named by hand is looked up
+across the org once (`list.py --status 4884`), kept only when exactly one issue
+has that number (open ones win over closed), and recorded the same way.
 
 ## Updating
 
@@ -514,7 +574,7 @@ fetch fails, and strips the sync bot's HTML comment markers from the body.
     make check-app     # load the desktop app mod once (needs herdr-app)
     python3 tests/run.py task_pane -v     # one suite
 
-169 tests, about three minutes. They run under `/usr/bin/python3` (3.9.6) because that is
+183 tests, about three minutes. They run under `/usr/bin/python3` (3.9.6) because that is
 the interpreter Herdr actually starts the plugin with — a test passing under
 Homebrew's 3.14 would prove nothing about the thing that ships.
 
@@ -555,6 +615,7 @@ Both false alarms cost real time before the harness was trustworthy. `ECH`,
 | `test_panel` | one GraphQL request for N PRs, review-decision mapping, board grouping and option order, excluded values leaving no empty section, footer clicks landing on the key under the pointer (a real SGR mouse report through the pty), and that a `gh` outage draws an error rather than an empty list |
 | `test_task_pane` | header identity, every field rendered, linked PRs with review state, body layout (lists hang, paragraphs stay flush, sync markers dropped), no line exceeding the pane width, and the three screens: issue, PR, and plain space |
 | `test_list` | `bin/list.py` as the desktop mod and Tern call it: every row key both read, one run per section, a PR row's closing issue and review decision, an unknown view named rather than empty, running through a symlink, and that `app/main.js` reads no row key `list.py` does not send |
+| `test_sync_agents` | the agents-list patch: where each edit lands, that a missing, doubled or already-applied anchor stops the sync, and that the layout swap moves only the agents block. Live, that the installed app's agents mod still takes it |
 | `test_live` | `herdr plugin link` reporting no warnings, and registered entrypoints matching the manifest. Skipped unless `GHI_LIVE=1` |
 
 The suite was mutation-checked: `Status` colliding with its value, HTML

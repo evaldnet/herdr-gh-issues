@@ -82,10 +82,9 @@ DEFAULTS = {
 # keeping our own budget smaller keeps a sidebar row from wrapping awkwardly.
 VALUE_MAX = 48
 
-ISSUE_QUERY = """
-query($owner:String!,$name:String!,$num:Int!){
-  repository(owner:$owner,name:$name){
-    issue(number:$num){
+# What tokens_for() reads off an issue. list.py --status aliases this once per
+# issue, so the Herdr app's agents list and this sidebar read the same fields.
+ISSUE_SELECTION = """
       number title state
       labels(first:10){nodes{name}}
       issueType{name}
@@ -95,10 +94,15 @@ query($owner:String!,$name:String!,$num:Int!){
         ... on IssueFieldDateValue{
           value field{... on IssueFieldDate{name}}}
       }}
-    }
+"""
+
+ISSUE_QUERY = """
+query($owner:String!,$name:String!,$num:Int!){
+  repository(owner:$owner,name:$name){
+    issue(number:$num){%s}
   }
 }
-"""
+""" % ISSUE_SELECTION
 
 PR_QUERY = """
 query($owner:String!,$name:String!,$num:Int!){

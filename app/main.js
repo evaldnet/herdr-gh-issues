@@ -12,7 +12,7 @@
 
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list, VirtualListScrollHandle } from "gpui-base";
-import { exec, spaces, run, theme, props, closeOverlay, notify, appHome, home } from "herdr";
+import { exec, spaces, run, theme, props, closeOverlay, notify, appHome, home, shared, setShared } from "herdr";
 
 // A GUI-launched app may not have Homebrew's gh on PATH; put it in front.
 const PATH = "/opt/homebrew/bin:/usr/local/bin";
@@ -215,6 +215,10 @@ export default class GhIssues extends View {
       return;
     }
     this.close();
+    // The agents list (gh-agents) reads each issue space's status by this
+    // map: a space name alone does not say which repo `#4884` is in.
+    const repo = row.is_pr ? row.issue_repo : row.repo;
+    if (repo) setShared("gh-issues.spaces", { ...(shared("gh-issues.spaces") ?? {}), [`#${issue}`]: `${repo}#${issue}` });
     const existing = this.spaceFor(issue);
     if (existing) {
       run("space.select", { id: existing.id });
