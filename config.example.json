@@ -69,7 +69,7 @@
     },
     {
       "id": "golive",
-      "label": "approved, ready to go live",
+      "label": "ready for deploy",
       "kind": "issues",
       "query": "is:issue is:open field.Status:\"Approved\" -field.Repositories:\"App\" -label:\"Afv. kunden\" -label:\"Må ikke lægges live uden koordinering\"",
       "column": "Priority",

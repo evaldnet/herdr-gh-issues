@@ -50,7 +50,7 @@ command = ["sh", "scripts/open.sh", "approved"]
 
 [[actions]]
 id = "open-golive"
-title = "GitHub Issues: open approved, ready to go live"
+title = "GitHub Issues: open ready for deploy"
 description = "Open the panel on the `golive` view."
 contexts = ["workspace", "tab", "pane"]
 command = ["sh", "scripts/open.sh", "golive"]
