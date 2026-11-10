@@ -4,10 +4,20 @@ Lists the issues assigned to you across your org; `Enter` opens a new Herdr spac
 with Claude started and briefed on the issue. A docked pane shows the task you
 are working on, and a sidebar row keeps its status next to the agent.
 
-This is the plugin for the **Herdr terminal app** (`herdr` 0.8+). The **Herdr
-desktop app** (`herdr-app` with herdr-core, `hc`) has no plugin system; it
-takes JavaScript mods instead, and `app/` is one. See *Herdr desktop app* below.
-Both read the same `config.json`.
+## Which Herdr?
+
+Herdr comes as two apps, and this repo has a front end for each. They read the
+same `config.json` and the same Python, so the lists match.
+
+| you run | what it is | install with |
+|---------|------------|--------------|
+| the **Herdr terminal app** | `herdr`, a terminal multiplexer, 0.8.0 or later | *Install: Herdr terminal app*, below. A Herdr plugin, `herdr plugin install` |
+| the **Herdr desktop app** | `herdr-app`, a desktop window over herdr-core (`hc`) | *Herdr desktop app*, further down. A JavaScript mod (`app/`), symlinked |
+
+The desktop app has no plugin system, so `herdr plugin install` does nothing
+for it. The desktop mod was built and tested against `herdr-app` 0.1.14 with
+`hc` 0.1.19; the app is moving fast, so run `make check-app` after updating it.
+Everything in *Before you install* applies to both.
 
 ## Before you install — two things it depends on
 
@@ -31,11 +41,15 @@ already have, or write one — it receives a single GitHub URL.
 
 ## Requirements
 
-- **Herdr ≥ 0.8.0** and **`gh`**, authenticated (`gh auth status`)
+- **`gh`**, authenticated (`gh auth status`)
+- **Herdr terminal app ≥ 0.8.0**, or the **Herdr desktop app** (tested with
+  `herdr-app` 0.1.14 and `hc` 0.1.19)
 - **macOS or Linux**, Python 3.9+ at `/usr/bin/python3`
 - No build step, no compiler, no daemon, no third-party packages — tests included
 
-## Install
+## Install: Herdr terminal app
+
+For the desktop app, skip to *Herdr desktop app*.
 
 ```bash
 herdr plugin install evaldnet/herdr-gh-issues
@@ -122,7 +136,19 @@ added in later app versions then have to be added by hand.
 
 The config is the plugin's, at the plugin's path:
 `~/.config/herdr/plugins/config/evaldnet.gh-issues/config.json`. The desktop
-app needs no Herdr terminal install, but that file has to exist.
+app needs no Herdr terminal install, but that file has to exist. Without the
+terminal app there is no `herdr plugin config-dir` to print the path, so
+create it from the example:
+
+```bash
+mkdir -p ~/.config/herdr/plugins/config/evaldnet.gh-issues
+cp ~/Projects/evaldnet/herdr-gh-issues/config.example.json \
+   ~/.config/herdr/plugins/config/evaldnet.gh-issues/config.json
+```
+
+Then set at least `org` and `space_cwd`, as in *Install: Herdr terminal app*.
+For the task status in the agents list, run `make sync-agents` too (see
+*Task status in the agents list*).
 
 ### Use
 
