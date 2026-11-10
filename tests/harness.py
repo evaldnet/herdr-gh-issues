@@ -111,6 +111,9 @@ def main():
             return out("issue_search.json")
         if "closedByPullRequestsReferences" in query:
             return out("issue_detail.json")
+        if "closingIssuesReferences" in query:
+            # list.py: the issue each PR row closes, one aliased request.
+            return out("closing_issues.json")
         if "headRefName" in query:
             return out("pr_detail.json")
         if "issueFieldValues" in query and "issue(number:" in query:

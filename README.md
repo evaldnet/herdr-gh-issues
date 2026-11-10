@@ -4,6 +4,11 @@ Lists the issues assigned to you across your org; `Enter` opens a new Herdr spac
 with Claude started and briefed on the issue. A docked pane shows the task you
 are working on, and a sidebar row keeps its status next to the agent.
 
+This is the plugin for the **Herdr terminal app** (`herdr` 0.8+). The **Herdr
+desktop app** (`herdr-app` with herdr-core, `hc`) has no plugin system; it
+takes JavaScript mods instead, and `app/` is one. See *Herdr desktop app* below.
+Both read the same `config.json`.
+
 ## Before you install — two things it depends on
 
 Read these first. Both are design choices rather than bugs, but if neither holds
@@ -85,6 +90,97 @@ description = "GitHub issue by number"
 
 For the sidebar row, add `$issue_status` to `[ui.sidebar.agents]` — see
 *Sidebar task info* below. Finish with `herdr server reload-config`.
+
+## Herdr desktop app
+
+`app/` is the same issue list as a mod for the Herdr desktop app: a popup over
+the window, grouped by board column, with the views from `config.json` as tabs
+along the top. It covers starting a task. The task pane, the sidebar status
+row and the status-change watcher are not ported yet.
+
+### Install
+
+The app loads mods from `~/.config/herdr-app/mods/<name>/`. Link this repo's
+`app/` there rather than copying it: the mod finds `bin/list.py` through the
+link (`mods/gh-issues/../bin`), so the folder name must be `gh-issues`.
+
+```bash
+git clone git@github.com:evaldnet/herdr-gh-issues.git ~/Projects/evaldnet/herdr-gh-issues
+ln -s ~/Projects/evaldnet/herdr-gh-issues/app ~/.config/herdr-app/mods/gh-issues
+herdr-app check ~/.config/herdr-app/mods/gh-issues
+```
+
+Then bind a key in `~/.config/herdr-app/keys.json`, under `global`:
+
+```json
+"cmd-shift-i": "mod.open:gh-issues"
+```
+
+Any edit to `keys.json`, even whitespace, makes the whole file yours: shortcuts
+added in later app versions then have to be added by hand.
+
+The config is the plugin's, at the plugin's path:
+`~/.config/herdr/plugins/config/evaldnet.gh-issues/config.json`. The desktop
+app needs no Herdr terminal install, but that file has to exist.
+
+### Use
+
+The filter box has the keyboard from the moment the popup opens, so typing
+filters (every word must match the repo, number, title, column, labels or
+author).
+
+| key | action |
+|-----|--------|
+| `↑` / `↓`, `ctrl-n` / `ctrl-p` | move |
+| `pageup` / `pagedown` | move ten |
+| `tab` / `shift-tab` | next / previous view (or click one) |
+| `enter` | start the selected item |
+| `#4510`, `core#4510`, a URL + `enter` | find it anywhere in the org; one hit starts at once |
+| `⌘O` | open in the browser |
+| `⌘R` | refresh |
+| `esc` | leave a lookup, then close |
+
+A bare number filters first; `enter` on a bare number that matches nothing on
+screen looks it up in the whole org. A click selects a row and a second click
+starts it. `●` marks an item that already has a space.
+
+### What Enter does
+
+One app command:
+
+    space.new {name: "#<issue>", folder: <space_cwd>, tab: <title>,
+               argv: ["claude"], task: "<view command> <url>"}
+
+`task` is the agent's first message, and the app delivers it once Claude is up.
+It replaces the terminal plugin's three calls and its `agent_pane_busy` retry
+loop (see *When Enter does nothing*), none of which the desktop app needs.
+
+The space is named after the **issue**, like spaces made by hand. A PR row starts
+the space of the issue it closes, which `list.py` reads from
+`closingIssuesReferences`. A PR that closes no issue is refused with a toast
+rather than given a space of its own. If a space with that name already exists,
+the popup switches to it instead of opening a second one. Issue numbers are per
+repo, so two repos' `#4510` would share a space.
+
+### How it is built
+
+The mod draws; `bin/list.py` fetches. `list.py` is a JSON front door to
+`panel.py`, so the views, issue fields, exclusions and lookup are the code the
+terminal plugin runs, not a JavaScript copy of it:
+
+    list.py                  the views and space_cwd, no network
+    list.py <view id>        that view's rows
+    list.py --lookup <text>  find an issue or PR by number or URL
+
+The Tern plugin calls the same script (it symlinks `bin/list.py` into its own
+folder). `tests/test_list.py` pins the row keys both of them read.
+
+Rows are cached in module scope, so reopening the popup shows the last list at
+once. It refetches a list older than a minute on open, and one older than five
+minutes on `tab`.
+
+The app hot-reloads a mod when one of its files changes, but not through the
+symlink: edits under `app/` show up the next time the popup opens.
 
 ## Updating
 
@@ -415,9 +511,10 @@ fetch fails, and strips the sync bot's HTML comment markers from the body.
     make test          # everything: offline, no GitHub auth, no running Herdr
     make test-live     # adds the checks that need the real herdr binary
     make lint          # syntax and manifest only, ~0.05s
+    make check-app     # load the desktop app mod once (needs herdr-app)
     python3 tests/run.py task_pane -v     # one suite
 
-75 tests, ~45 seconds. They run under `/usr/bin/python3` (3.9.6) because that is
+169 tests, about three minutes. They run under `/usr/bin/python3` (3.9.6) because that is
 the interpreter Herdr actually starts the plugin with — a test passing under
 Homebrew's 3.14 would prove nothing about the thing that ships.
 
@@ -457,6 +554,7 @@ Both false alarms cost real time before the harness was trustworthy. `ECH`,
 | `test_issue_meta` | resolving a pane to an issue by record and by name fallback, token values and their 80-character limit, `closed` outranking the board column, field-name folding, cache TTL, and that a plain space has *our* tokens cleared and nobody else's |
 | `test_panel` | one GraphQL request for N PRs, review-decision mapping, board grouping and option order, excluded values leaving no empty section, footer clicks landing on the key under the pointer (a real SGR mouse report through the pty), and that a `gh` outage draws an error rather than an empty list |
 | `test_task_pane` | header identity, every field rendered, linked PRs with review state, body layout (lists hang, paragraphs stay flush, sync markers dropped), no line exceeding the pane width, and the three screens: issue, PR, and plain space |
+| `test_list` | `bin/list.py` as the desktop mod and Tern call it: every row key both read, one run per section, a PR row's closing issue and review decision, an unknown view named rather than empty, running through a symlink, and that `app/main.js` reads no row key `list.py` does not send |
 | `test_live` | `herdr plugin link` reporting no warnings, and registered entrypoints matching the manifest. Skipped unless `GHI_LIVE=1` |
 
 The suite was mutation-checked: `Status` colliding with its value, HTML

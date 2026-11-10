@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+# The Herdr app writes these into every mod folder, symlinked ones included.
+app/jsconfig.json
+app/*.d.ts

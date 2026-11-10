@@ -2,7 +2,7 @@
 # is what Herdr actually runs the plugin with, so it is what the tests use too.
 PYTHON ?= /usr/bin/python3
 
-.PHONY: test test-live test-verbose test-interpreters lint
+.PHONY: test test-live test-verbose test-interpreters lint check-app
 
 test:
 	$(PYTHON) tests/run.py
@@ -24,3 +24,8 @@ test-interpreters:
 # Syntax and manifest only -- the fast subset.
 lint:
 	$(PYTHON) tests/run.py static
+
+# The Herdr app mod (app/): loads it once and renders it, as the app would.
+# Needs herdr-app on PATH; it does not lay out the list or run its fetches.
+check-app:
+	herdr-app check app
