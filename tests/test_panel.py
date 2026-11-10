@@ -157,6 +157,18 @@ class PanelCase(unittest.TestCase):
         self.assertIn('field.Status:"Approved"', view["query"])
         self.assertIn("Approved", self.views["assigned"]["exclude"]["Status"])
 
+    def test_golive_view_filters_server_side(self):
+        """Approved for everyone, minus App and the two hold labels -- all in the
+        query, so the count is GitHub's and pagination stays honest."""
+        view = self.views["golive"]
+        q = view["query"]
+        self.assertNotIn("assignee:", q)
+        self.assertIn('field.Status:"Approved"', q)
+        self.assertIn('-field.Repositories:"App"', q)
+        self.assertIn('-label:"Afv. kunden"', q)
+        self.assertIn('-label:"Må ikke lægges live uden koordinering"', q)
+        self.assertNotIn("exclude_labels", view)
+
     def test_row_field_on_a_missing_field_says_so(self):
         view = dict(self.views["assigned"], row_field="Nope")
         _, _, err = self.m.load_view(self.cfg, view, {})
@@ -425,6 +437,7 @@ class PanelCase(unittest.TestCase):
             ids = re.findall(r'"scripts/open\.sh",\s*"([^"]+)"', fh.read())
         self.assertIn("totest", ids)
         self.assertIn("approved", ids)
+        self.assertIn("golive", ids)
         self.assertIn(self.m.LOOKUP_START, ids)
         for vid in ids:
             if vid == self.m.LOOKUP_START:

@@ -81,7 +81,8 @@ command = "evaldnet.gh-issues.open-task"
 description = "Task detail pane"
 
 # Optional: straight to a view. `open-totest` = ready for test, not mine;
-# `open-approved` = my approved issues; `open-review` = PRs awaiting my review.
+# `open-approved` = my approved issues; `open-golive` = approved, ready to go
+# live; `open-review` = PRs awaiting my review.
 [[keys.command]]
 key = "prefix+shift+r"
 type = "plugin_action"
@@ -93,6 +94,12 @@ key = "prefix+shift+a"
 type = "plugin_action"
 command = "evaldnet.gh-issues.open-approved"
 description = "My approved issues"
+
+[[keys.command]]
+key = "prefix+shift+g"
+type = "plugin_action"
+command = "evaldnet.gh-issues.open-golive"
+description = "Approved, ready to go live"
 
 # Optional: straight to the issue-number prompt (see *Find by number*).
 [[keys.command]]
@@ -304,13 +311,15 @@ Two surfaces over the same list:
 | popup | `prefix+shift+i` | session-modal, 85%×80%. `Enter` hands off and closes it. |
 | to test | `prefix+shift+r` | the popup, opened on the `totest` view instead of the first. |
 | approved | `prefix+shift+a` | the popup, opened on the `approved` view. |
+| go live | `prefix+shift+g` | the popup, opened on the `golive` view. |
 | by number | `prefix+shift+f` | the popup, opened on the `#` prompt. No view is fetched. |
 | task | `prefix+shift+t` | docked split pane, **this space's** issue in detail. |
 | sidebar | — | one row per agent, always on. See *Sidebar task info*. |
 
 Or the command palette → "GitHub Issues: open panel" / "find an issue or PR
 by number" / "open ready for test, not mine" / "open my approved issues" /
-"open PRs awaiting my review" / "open task detail pane".
+"open approved, ready to go live" / "open PRs awaiting my review" /
+"open task detail pane".
 
 A key for another view is one `[[actions]]` block in `herdr-plugin.toml`, since a
 keybinding cannot pass arguments — copy `open-totest` and change the view id in
@@ -664,6 +673,7 @@ verified by hand with `herdr plugin log list` and `herdr agent list`, and
 |------|-------|--------|
 | `assigned` | open issues assigned to you | Tasks-board column |
 | `approved` | your open issues on board `Approved`, which `assigned` hides | Priority |
+| `golive` | everyone's `Approved` issues, minus the App repo and the `Afv. kunden` / `Må ikke lægges live uden koordinering` labels | Priority |
 | `unassigned` | open issues with no assignee, Approved/Deployed dropped | Status, Priority inline |
 | `review` | open PRs where your review is requested | PR author |
 | `ready` | your open PRs out of draft with no review yet | none |

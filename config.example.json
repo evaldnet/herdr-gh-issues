@@ -68,6 +68,23 @@
       "command": "/github-issue"
     },
     {
+      "id": "golive",
+      "label": "approved, ready to go live",
+      "kind": "issues",
+      "query": "is:issue is:open field.Status:\"Approved\" -field.Repositories:\"App\" -label:\"Afv. kunden\" -label:\"Må ikke lægges live uden koordinering\"",
+      "column": "Priority",
+      "order": [
+        "Prod Stop",
+        "Ekspederes",
+        "First",
+        "Second",
+        "Third",
+        "Last"
+      ],
+      "date_field": "Deployment date",
+      "command": "/github-issue"
+    },
+    {
       "id": "unassigned",
       "label": "unassigned issues",
       "kind": "issues",
