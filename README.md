@@ -212,7 +212,8 @@ folder). `tests/test_list.py` pins the row keys both of them read.
 
 Rows are cached in module scope, so reopening the popup shows the last list at
 once. It refetches a list older than a minute on open, and one older than five
-minutes on `tab`.
+minutes on `tab`. The view list itself is re-read from `config.json` on every
+open, so a view added there shows without restarting the app.
 
 The app hot-reloads a mod when one of its files changes, but not through the
 symlink: edits under `app/` show up the next time the popup opens.

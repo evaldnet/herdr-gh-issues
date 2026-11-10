@@ -97,16 +97,20 @@ export default class GhIssues extends View {
     this.input.focus();
     // The popup takes focus as it opens; take it back once it has.
     cx.timer.after(600, () => this.input.focus());
+    // The view list is re-read on every open, not once per app session: the
+    // module outlives config.json edits, and a view added there would
+    // otherwise stay hidden until the app restarts. list.py with no view is
+    // local (~40ms), and a cached view starts refetching alongside it.
     cx.spawn(async (cx) => {
-      if (!META.views) {
-        const d = await runList([]);
-        META.views = d.views ?? [];
-        META.cwd = d.space_cwd ?? "~/Projects";
-        this.metaErr = d.err;
-      }
+      const early = META.views && this.view ? this.load(this.view, cx, OPEN_MS) : null;
+      const d = await runList([]);
+      if (d.views || !META.views) META.views = d.views ?? [];
+      META.cwd = d.space_cwd ?? META.cwd ?? "~/Projects";
+      this.metaErr = d.err;
       if (!this.view || !META.views.some((v) => v.id === this.view)) this.view = META.views[0]?.id ?? null;
       cx.notify();
-      if (this.view) await this.load(this.view, cx, OPEN_MS);
+      if (early) await early;
+      else if (this.view) await this.load(this.view, cx, OPEN_MS);
     });
   }
 
