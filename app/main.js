@@ -162,6 +162,8 @@ export default class GhIssues extends View {
     this.view = id;
     this.lookup = null;
     this.at = 0;
+    // A chip click left the keyboard on the popup; typing filters again.
+    this.input.focus();
     cx.notify();
     cx.spawn(async (cx) => this.load(id, cx, TAB_MS));
   }
@@ -324,6 +326,7 @@ export default class GhIssues extends View {
             // First click selects, a click on the selected row starts it.
             if (it.index === this.at) return this.start(it.row);
             this.at = it.index;
+            this.input.focus();
             cx.notify();
           }))
         .child(Scrollbar.vertical("ghi-rows").viewport_from_layout().absolute().inset_0());
@@ -351,7 +354,13 @@ export default class GhIssues extends View {
         else if (k === "pageup") this.move(-10, items, rows);
         else if (k === "tab") this.switchView(1, cx);
         else if (k === "shift-tab") this.switchView(-1, cx);
-        else if (k === "cmd-o") this.browse(rows[sel]);
+        // Enter is the input's `submit` while it has the keyboard. A click
+        // anywhere else in the popup moves the keyboard onto this element
+        // (it tracks a focus handle), and Enter then arrives only here.
+        else if (k === "enter" && this.handle.is_focused()) {
+          cx.stop_propagation();
+          return this.submit(cx);
+        } else if (k === "cmd-o") this.browse(rows[sel]);
         else if (k === "cmd-r") {
           if (this.lookup) cx.spawn(async (cx) => this.find(this.lookup.text, cx));
           else cx.spawn(async (cx) => this.load(this.view, cx, 0));
