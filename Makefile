@@ -31,8 +31,9 @@ check-app:
 	herdr-app check app
 
 # Rebuild gh-agents and gh-main (the agents list with task status, and the
-# layout that shows it) from the Herdr app's current shipped files. Run after
-# a Herdr update; gh-agents says when it is behind. `--check` / `--dry-run`
-# via ARGS, e.g. `make sync-agents ARGS=--check`.
+# layout that shows it) from the Herdr app's current shipped files. gh-agents
+# does this itself after a Herdr update (`--auto`); run it by hand after a
+# failed auto-rebuild or a layout reset. `--check` / `--dry-run` via ARGS,
+# e.g. `make sync-agents ARGS=--check`.
 sync-agents:
 	$(PYTHON) bin/sync_agents.py $(ARGS)

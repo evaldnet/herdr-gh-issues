@@ -8,7 +8,10 @@ applied, in memory, to the agents mod the installed Herdr app shipped.
 """
 from __future__ import annotations
 
+import json
 import os
+import shutil
+import tempfile
 import unittest
 
 import harness
@@ -70,6 +73,90 @@ class PatchCase(unittest.TestCase):
         self.assertEqual(sync.swap_agents(tree), 1)
         mods = [c["content"]["mod"] for c in tree["children"]]
         self.assertEqual(mods, ["spaces", sync.MOD, "tabs"])
+
+
+class AutoCase(unittest.TestCase):
+    """--auto, which gh-agents runs on every start: rebuild only when it pays."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.saved = {k: getattr(sync, k) for k in ("APP_HOME", "BACKUP_DIR", "AUTO_STATE", "LOCK", "sync")}
+        sync.APP_HOME = os.path.join(self.tmp, "app")
+        sync.BACKUP_DIR = os.path.join(self.tmp, "state")
+        sync.AUTO_STATE = os.path.join(sync.BACKUP_DIR, "auto-sync.json")
+        sync.LOCK = os.path.join(sync.BACKUP_DIR, "sync.lock")
+        os.makedirs(os.path.join(sync.APP_HOME, "mods", sync.MOD))
+        self.calls = 0
+        self.fail = None
+        sync.sync = self.fake_sync
+        self.herdr({"agents": {"main.js": "new"}, "layout:main": {"json": "m"}})
+
+    def tearDown(self):
+        for k, v in self.saved.items():
+            setattr(sync, k, v)
+        shutil.rmtree(self.tmp)
+
+    def herdr(self, installed):
+        sync.write_json(os.path.join(sync.APP_HOME, "installed.json"), installed)
+
+    def built_from(self, synced):
+        sync.write_json(os.path.join(sync.APP_HOME, "mods", sync.MOD, sync.SYNCED), synced)
+
+    def fake_sync(self, dry_run):
+        self.calls += 1
+        if self.fail:
+            raise sync.SyncError(self.fail)
+        sync.write_json(os.path.join(sync.APP_HOME, "mods", sync.MOD, sync.SYNCED), sync.wanted())
+        return 0
+
+    def state(self):
+        with open(sync.AUTO_STATE) as fh:
+            return json.load(fh)
+
+    def test_never_built_is_left_alone(self):
+        os.rmdir(os.path.join(sync.APP_HOME, "mods", sync.MOD))
+        self.assertEqual(sync.auto(), 0)
+        self.assertEqual(self.calls, 0)
+
+    def test_current_clone_is_left_alone(self):
+        self.built_from(sync.wanted())
+        self.assertEqual(sync.auto(), 0)
+        self.assertEqual(self.calls, 0)
+
+    def test_behind_clone_is_rebuilt_and_recorded(self):
+        self.built_from({"agents": {"main.js": "old"}, "layout:main": {"json": "m"}})
+        self.assertEqual(sync.auto(), 0)
+        self.assertEqual(self.calls, 1)
+        self.assertTrue(self.state()["ok"])
+        self.assertEqual(self.state()["wanted"], sync.wanted())
+
+    def test_failure_is_recorded_and_not_retried_for_the_same_herdr(self):
+        self.built_from({"agents": {"main.js": "old"}, "layout:main": {"json": "m"}})
+        self.fail = "anchor found 0 times"
+        self.assertEqual(sync.auto(), 1)
+        self.assertFalse(self.state()["ok"])
+        self.assertIn("anchor found 0 times", self.state()["error"])
+        self.assertEqual(sync.auto(), 1)  # the restored clone reloads and asks again
+        self.assertEqual(self.calls, 1)
+
+    def test_a_new_herdr_earns_a_fresh_attempt_after_a_failure(self):
+        self.built_from({"agents": {"main.js": "old"}, "layout:main": {"json": "m"}})
+        self.fail = "anchor found 0 times"
+        sync.auto()
+        self.herdr({"agents": {"main.js": "newer"}, "layout:main": {"json": "m"}})
+        self.fail = None
+        self.assertEqual(sync.auto(), 0)
+        self.assertEqual(self.calls, 2)
+        self.assertTrue(self.state()["ok"])
+
+    def test_a_held_lock_skips_the_run(self):
+        self.built_from({"agents": {"main.js": "old"}, "layout:main": {"json": "m"}})
+        held = sync.locked()
+        try:
+            self.assertEqual(sync.auto(), 0)
+        finally:
+            held.close()
+        self.assertEqual(self.calls, 0)
 
 
 @unittest.skipUnless(os.environ.get("GHI_LIVE"), "needs GHI_LIVE=1 and the Herdr app")

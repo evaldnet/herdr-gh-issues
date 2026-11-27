@@ -253,10 +253,25 @@ stops and puts the previous clone back rather than guess. Clicks (sidebar
 width and the like) are kept in `layouts/.state` and survive a rebuild;
 edits to `gh-main.json` itself do not.
 
-Clones never get Herdr's updates. Run `make sync-agents` again after one:
-`gh-agents` compares `installed.json` with what it was built from, and posts a
-toast on start when Herdr's agents list or main layout has moved on. Going
-back is `layout.switch` to `main`; the clones can then be deleted.
+Clones never get Herdr's updates, so `gh-agents` rebuilds itself after one.
+On start it compares `installed.json` with what it was built from, and when
+Herdr's agents list or main layout has moved on it runs
+`sync_agents.py --auto`, detached, since the rebuild replaces the mod that
+started it. The new copy posts *Agents list rebuilt*. If the rebuild fails (an
+anchor moved), the previous clone is put back and the toast says why instead;
+that Herdr version is not tried again, so a broken anchor cannot loop. Fix it
+and run `make sync-agents`; the next Herdr update gets a fresh attempt anyway.
+The run is logged to `~/.local/state/herdr-gh-issues/auto-sync.log`, its
+outcome kept in `auto-sync.json` beside it, and a lock there keeps a manual
+and an automatic sync from overlapping.
+
+This only works while `gh-main` is the shown layout. Herdr's escape hatch
+(`ctrl-alt-shift-escape`) sets the shown layout and `keys.json` aside as
+`*.reset-<time>` and goes back to `main`, which takes the status rows, the
+watcher and any key bound to `mod.open:gh-issues` with it. Nothing rebuilds
+after that on purpose, because the reset was asked for: run `make sync-agents`
+and put the key back. Going back by choice is `layout.switch` to `main`; the
+clones can then be deleted.
 
 **The watcher** runs in `gh-agents`, which is always on screen. Every
 `watch_seconds` (`0` turns it off) it reads every issue space's status with

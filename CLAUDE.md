@@ -7,4 +7,5 @@
 - A view's `column` can't be a multi-select field (e.g. `Repositories`): `ISSUE_SELECTION` fetches only single-select and date values.
 - New view = `config.example.json` + README *Views* row + a test in `tests/test_panel.py`. Its own key adds an `[[actions]]` block in `herdr-plugin.toml`, the README key/surface/palette lines, and its id in the `open.sh` ids test.
 - Desktop app: `herdr-app do mod.open --name gh-issues` toggles the popup, `herdr-app shot <file.png>` screenshots the window, `herdr-app status` lists overlays and errors.
-- `make sync-agents` rebuilds the `gh-agents`/`gh-main` clones; `ARGS=--check` says whether they're behind Herdr.
+- `make sync-agents` rebuilds the `gh-agents`/`gh-main` clones; `ARGS=--check` says whether they're behind Herdr. `gh-agents` runs `--auto` itself after a Herdr update; log and outcome in `~/.local/state/herdr-gh-issues/auto-sync.{log,json}`.
+- Anything run from inside the app comes in as `mods/gh-issues/../bin/...`: resolve paths with `realpath`, never `abspath`, which folds the `..` before the symlink is followed.

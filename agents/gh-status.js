@@ -14,12 +14,14 @@
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { exec, spaces, shared, setShared, notify, appHome, readTextFile } from "herdr";
+import { exec, spaces, shared, setShared, notify, appHome, home, checking, readTextFile } from "herdr";
 
 const PATH = "/opt/homebrew/bin:/usr/local/bin";
 const STATUS_KEY = "gh-issues.status"; // "#4907" -> { repo, number, status, priority, type }
 const SPACES_KEY = "gh-issues.spaces"; // "#4907" -> "Mobilplan/core#4907"
 const TICK_MS = 30 * 1000;
+const SOURCES = ["agents", "layout:main"]; // installed.json entries the clone is built from
+const ANNOUNCED_KEY = "gh-issues.sync-announced"; // `at` of the last rebuild a toast reported
 
 // GitHub's own option colours (dark theme), as in the classic plugin's sidebar.
 const STATUS = {
@@ -34,7 +36,7 @@ const PRIORITY = {
 
 // Deliberately module scope: copies of a mod share it, so however many
 // copies the layout holds, one fetch runs at a time and one toast goes out.
-const W = { busy: false, sig: null, at: 0, watchMs: 120 * 1000, notify: true, warned: false };
+const W = { busy: false, sig: null, at: 0, watchMs: 120 * 1000, notify: true, syncBusy: false, syncSig: null };
 
 function issueKey(name) {
   const m = /^#(\d+)\b/.exec(name || "");
@@ -103,24 +105,55 @@ function refresh(cx) {
   });
 }
 
-// The clone is frozen at the Herdr version it was made from. Say so once per
-// start when Herdr's own agents list or main layout has moved on since.
+// The clone is frozen at the Herdr version it was made from. When Herdr's own
+// agents list or main layout has moved on, rebuild it: sync_agents.py --auto,
+// detached, because the rebuild replaces this very mod. The copy it builds
+// reads the outcome from auto-sync.json and reports it once. A rebuild that
+// failed for this Herdr is not retried (sync_agents.py refuses too); the
+// toast says why instead.
+//
+// Runs on every tick, not once: the app hot-reloads this mod as soon as the
+// rebuild writes main.js, before .synced.json exists, so the first look of
+// the new copy sees a half-built clone. A decision is taken once per
+// (installed, synced, last run) and the next change earns a new one.
 function checkSync(cx) {
-  if (W.warned) return;
-  W.warned = true;
+  if (W.syncBusy || checking()) return; // herdr-app check runs init for real, and sync_agents.py calls it
+  W.syncBusy = true;
   cx.spawn(async () => {
     try {
-      const installed = JSON.parse(await readTextFile(`${appHome()}/installed.json`));
-      const synced = JSON.parse(await readTextFile(`${appHome()}/mods/gh-agents/.synced.json`));
-      const behind = ["agents", "layout:main"].filter((k) => JSON.stringify(installed[k]) !== JSON.stringify(synced[k]));
-      if (behind.length) {
+      const state = `${home()}/.local/state/herdr-gh-issues`;
+      const read = async (p) => JSON.parse((await readTextFile(p)) ?? "null");
+      const installed = await read(`${appHome()}/installed.json`);
+      const synced = await read(`${appHome()}/mods/gh-agents/.synced.json`);
+      const last = (await read(`${state}/auto-sync.json`)) ?? {};
+      if (!installed || !synced) return; // mid-rebuild, or never built: look again next tick
+      const sig = JSON.stringify([SOURCES.map((k) => [installed[k], synced[k]]), last.at ?? null]);
+      if (sig === W.syncSig) return;
+      W.syncSig = sig;
+      const same = (a, b) => SOURCES.every((k) => JSON.stringify(a?.[k] ?? null) === JSON.stringify(b?.[k] ?? null));
+      if (same(installed, synced)) {
+        if (last.ok && same(installed, last.wanted) && shared(ANNOUNCED_KEY) !== last.at) {
+          setShared(ANNOUNCED_KEY, last.at);
+          notify({ title: "Agents list rebuilt", body: "Herdr updated, so gh-agents was rebuilt from its new agents list.", level: "info" });
+        }
+        return;
+      }
+      if (last.ok === false && same(installed, last.wanted)) {
         notify({
           title: "Agents list is behind Herdr",
-          body: `Herdr updated ${behind.join(" and ")}. Run \`make sync-agents\` in herdr-gh-issues to rebuild gh-agents.`,
+          body: `Rebuilding gh-agents failed: ${last.error} Fix it, then run \`make sync-agents\` in herdr-gh-issues.`,
           level: "warning",
         });
+        return;
       }
-    } catch {}
+      const script = `${appHome()}/mods/gh-issues/../bin/sync_agents.py`;
+      await exec("/bin/sh", ["-c",
+        `mkdir -p "$2" && PATH="${home()}/.local/bin:${PATH}:$PATH" /usr/bin/python3 "$1" --auto </dev/null >>"$2/auto-sync.log" 2>&1 &`,
+        "sh", script, state]);
+    } catch {
+    } finally {
+      W.syncBusy = false;
+    }
   });
 }
 
@@ -128,7 +161,10 @@ function checkSync(cx) {
 export function ghStatus(cx) {
   checkSync(cx);
   refresh(cx);
-  cx.timer.every(TICK_MS, (cx) => refresh(cx));
+  cx.timer.every(TICK_MS, (cx) => {
+    checkSync(cx);
+    refresh(cx);
+  });
 }
 
 // The status lines under one agent row: Task Status · type, then priority.

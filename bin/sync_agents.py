@@ -6,9 +6,11 @@ The Herdr desktop app gives its shipped agents list no extension point and
 replaces shipped mods on every start, so the status rows live in a clone, and
 a clone of the main layout points its sidebar at it. Clones are frozen at the
 version they were made from. Run this again after a Herdr update to rebuild
-them from the current shipped files; gh-agents posts a toast when it is behind.
+them from the current shipped files. gh-agents does that itself on start: when
+it is behind it runs `--auto`, detached, since the rebuild replaces it.
 
     sync_agents.py             build or rebuild both
+    sync_agents.py --auto      rebuild only if built and behind (what gh-agents runs)
     sync_agents.py --check     exit 1 if the clone is missing or behind Herdr
     sync_agents.py --dry-run   say what would happen, change nothing
 
@@ -21,6 +23,7 @@ Targets /usr/bin/python3 (3.9.6): stdlib only.
 """
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import shutil
@@ -28,13 +31,19 @@ import subprocess
 import sys
 import time
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# realpath, not abspath: gh-agents runs this as mods/gh-issues/../bin/..., and
+# abspath folds the .. away before the gh-issues symlink is followed.
+REPO = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 APP_HOME = os.environ.get("HERDR_APP_HOME") or os.path.expanduser("~/.config/herdr-app")
 MOD = "gh-agents"
 LAYOUT = "gh-main"
 STATUS_JS = os.path.join(REPO, "agents", "gh-status.js")
 BACKUP_DIR = os.path.expanduser("~/.local/state/herdr-gh-issues")
 SYNCED = ".synced.json"
+# The last --auto run: {"wanted", "ok", "error", "at"}. gh-agents reads it to
+# announce a rebuild, or to say why one failed instead of retrying it.
+AUTO_STATE = os.path.join(BACKUP_DIR, "auto-sync.json")
+LOCK = os.path.join(BACKUP_DIR, "sync.lock")
 # installed.json entries the clones are made from.
 SOURCES = ("agents", "layout:main")
 
@@ -124,19 +133,73 @@ def wanted():
     return {k: installed.get(k) for k in SOURCES}
 
 
-def check():
-    mod_dir = os.path.join(APP_HOME, "mods", MOD)
+def behind_keys():
+    """None when the clone was never built, else the SOURCES it is behind on."""
     try:
-        synced = read_json(os.path.join(mod_dir, SYNCED))
+        synced = read_json(os.path.join(APP_HOME, "mods", MOD, SYNCED))
     except (OSError, ValueError):
+        return None
+    want = wanted()
+    return [k for k in SOURCES if synced.get(k) != want[k]]
+
+
+def check():
+    behind = behind_keys()
+    if behind is None:
         print("%s: not built" % MOD)
         return 1
-    behind = [k for k in SOURCES if synced.get(k) != wanted()[k]]
     if behind:
         print("%s: behind Herdr's %s" % (MOD, ", ".join(behind)))
         return 1
     print("%s: current" % MOD)
     return 0
+
+
+def locked():
+    """An exclusive, non-blocking lock on LOCK, or None when another sync holds it."""
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    fh = open(LOCK, "w")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    return fh
+
+
+def auto():
+    """Rebuild a clone that exists and is behind; what gh-agents runs on start.
+
+    Never builds one nobody made, and never retries a failure for the same
+    Herdr: the restored clone would reload, run this again and fail again, in
+    a loop. A Herdr update changes `wanted()` and so earns a fresh attempt.
+    """
+    behind = behind_keys()
+    if not behind:
+        return 0
+    want = wanted()
+    try:
+        last = read_json(AUTO_STATE)
+    except (OSError, ValueError):
+        last = {}
+    if last.get("ok") is False and last.get("wanted") == want:
+        print("%s: rebuild already failed for this Herdr; not retrying" % MOD)
+        return 1
+    lock = locked()
+    if lock is None:
+        print("%s: another sync is running" % MOD)
+        return 0
+    with lock:
+        if not behind_keys():  # a sync that just let go of the lock did it
+            return 0
+        result = {"wanted": want, "at": int(time.time())}
+        try:
+            sync(False)
+            result["ok"] = True
+        except Exception as exc:  # SyncError, or herdr-app/file trouble: record it either way
+            result.update(ok=False, error=str(exc)[:400])
+        write_json(AUTO_STATE, result)
+    return 0 if result["ok"] else 1
 
 
 def sync(dry_run):
@@ -201,7 +264,21 @@ def main():
     try:
         if "--check" in args:
             return check()
-        return sync("--dry-run" in args)
+        if "--auto" in args:
+            # Leave the app's process group: the rebuild replaces the mod that
+            # started this, and must not die with it.
+            try:
+                os.setsid()
+            except OSError:
+                pass
+            return auto()
+        if "--dry-run" in args:
+            return sync(True)
+        lock = locked()
+        if lock is None:
+            raise SyncError("another sync is running (%s)" % LOCK)
+        with lock:
+            return sync(False)
     except SyncError as exc:
         print("sync_agents: %s" % exc, file=sys.stderr)
         return 1
